@@ -1188,6 +1188,9 @@ const loadGLB = (name) => glbCache[name] ||= track(fetchBin(`assets/models/${nam
 const DPR = Math.min(devicePixelRatio || 1, small ? 1.6 : 1.8);
 function makeRenderer(canvas, { alpha = true, shadows = false } = {}) {
   const r = new THREE.WebGLRenderer({ canvas, antialias: true, alpha, powerPreference: 'high-performance' });
+  /* phones cap live WebGL contexts (about 8); a dropped one paints as a blank box, so hide it instead */
+  canvas.addEventListener('webglcontextlost', () => { canvas.style.visibility = 'hidden'; });
+  canvas.addEventListener('webglcontextrestored', () => { canvas.style.visibility = ''; });
   r.setPixelRatio(DPR);
   r.outputColorSpace = THREE.SRGBColorSpace;
   r.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1679,6 +1682,11 @@ safe('videos', () => {
    ===================================================================================== */
 function explodeViewer(box, slider, glbName, opts = {}) {
   if (!box) return;
+  /* start each viewer only when it nears the screen, so the hero keeps its WebGL context on phones */
+  if (!opts.now && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((es) => { if (es.some(e => e.isIntersecting)) { io.disconnect(); explodeViewer(box, slider, glbName, { ...opts, now: true }); } }, { rootMargin: '700px 0px' });
+    io.observe(box); return;
+  }
   const canvas = document.createElement('canvas'); box.prepend(canvas);
   canvas.setAttribute('role', 'img'); canvas.setAttribute('aria-label', opts.label || '3D model');
   const renderer = makeRenderer(canvas); const scene = new THREE.Scene(); scene.environment = envFor(renderer);
