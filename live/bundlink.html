@@ -1,0 +1,1487 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>BundLink</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: field-engineering brief. A live, sectioned 3D model of a three-plot paddy tract fills the top;
+   below it a report with marginal headings on wide screens, single column on phones. */
+:root{
+  --bg:#EDF1EA;
+  --surface:#FAFBF7;
+  --surface-2:#E3E9E0;
+  --ink:#14201A;
+  --ink-2:#3A4840;
+  --muted:#5C6A61;
+  --rule:#CFD8CC;
+  --keep:#A5441C;
+  --fill:#0A6B72;
+  --water:#2B97A0;
+  --plate:#FBFBF6;
+  --plate-ink:#1A1A1A;
+  --chart-muted:#7C897F;
+  --grid:#DDE4DA;
+  --hud:rgba(250,251,247,.93);
+  --stage:#A9C2CC;
+  --font-display:"Barlow Condensed","Arial Narrow","Roboto Condensed",sans-serif;
+  --font-body:"IBM Plex Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1511;--surface:#141E18;--surface-2:#1B2820;--ink:#E2EAE1;--ink-2:#B8C4BA;--muted:#8D9B90;--rule:#29362D;
+    --keep:#E27B4D;--fill:#4EC0C6;--water:#3FB0B8;--plate:#D9DFD6;--plate-ink:#151515;--chart-muted:#66766B;--grid:#223028;
+    --hud:rgba(20,30,24,.92);--stage:#16233A;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1511;--surface:#141E18;--surface-2:#1B2820;--ink:#E2EAE1;--ink-2:#B8C4BA;--muted:#8D9B90;--rule:#29362D;
+  --keep:#E27B4D;--fill:#4EC0C6;--water:#3FB0B8;--plate:#D9DFD6;--plate-ink:#151515;--chart-muted:#66766B;--grid:#223028;
+  --hud:rgba(20,30,24,.92);--stage:#16233A;color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.6 var(--font-body);-webkit-font-smoothing:antialiased}
+a{color:var(--fill);text-underline-offset:2px}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--fill);outline-offset:2px}
+
+/* masthead */
+.mast{padding-block:22px 18px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));border-bottom:1px solid var(--rule)}
+.mast-in{max-width:1240px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 32px}
+.mast h1{font:700 clamp(42px,6.4vw,68px)/.86 var(--font-display);letter-spacing:.01em;margin:0;text-transform:uppercase}
+.pitch{margin:10px 0 0;max-width:48ch;color:var(--ink-2);font-size:16px;line-height:1.45}
+.mast-meta{display:flex;flex-wrap:wrap;gap:10px 24px;margin:0}
+.mast-meta div{min-width:0}
+.mast-meta dt{font:500 10.5px/1.3 var(--font-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.mast-meta dd{margin:3px 0 0;font:500 13px/1.3 var(--font-mono);color:var(--ink)}
+.tag{display:inline-block;padding:1px 7px;border:1px solid var(--keep);border-radius:3px}
+
+/* stage */
+.stage{position:relative;background:var(--stage)}
+.viewport{position:relative;height:clamp(320px,52vh,470px);overflow:hidden;background:var(--stage)}
+#scene{display:block;width:100%;height:100%;touch-action:none;outline:none}
+.vp-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font:500 14px/1.5 var(--font-body);color:#E8EEF2;background:rgba(10,18,28,.25)}
+.vp-msg[hidden]{display:none!important}
+.labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;width:0;height:0;will-change:transform}
+.lbl .dot{position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 2px var(--hud)}
+.lbl.k .dot{background:var(--keep)}
+.lbl.f .dot{background:var(--fill)}
+.lbl .txt{position:absolute;top:-11px;left:16px;padding:2px 8px;border-radius:4px;background:var(--hud);color:var(--ink);font:500 12px/18px var(--font-body);white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.lbl .txt::before{content:"";position:absolute;top:50%;left:-12px;width:12px;height:1px;background:var(--hud)}
+.lbl.l .txt{left:auto;right:16px}
+.lbl.l .txt::before{left:auto;right:-12px}
+.lbl.u .txt{left:0;top:-38px;transform:translateX(-50%)}
+.lbl.u .txt::before{left:50%;top:auto;bottom:-16px;width:1px;height:16px}
+.lbl.name .dot{display:none}
+.lbl.name .txt{top:-12px;transform:translateX(-50%);left:0;font:600 13px/18px var(--font-display);letter-spacing:.06em;text-transform:uppercase}
+.lbl.name .txt::before{display:none}
+.lbl.field .dot{display:none}
+.lbl.field .txt{left:0;top:-12px;transform:translateX(-50%);background:transparent;box-shadow:none;color:#F4F7F2;font:600 15px/18px var(--font-display);letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 3px rgba(0,0,0,.55)}
+.lbl.field .txt::before{display:none}
+.mini{position:absolute;left:max(10px,env(safe-area-inset-left,0px));top:10px;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none}
+.mini span{background:var(--hud);color:var(--ink);border-radius:4px;padding:2px 7px;font:500 12px/18px var(--font-mono);font-variant-numeric:tabular-nums}
+
+.hud{display:grid;gap:12px;padding-block:12px 16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--bg)}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:8px}
+.tour{padding:16px 18px 14px}
+.eyebrow{font:500 11px/1.2 var(--font-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}
+.tour-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tour h2{font:600 27px/1.02 var(--font-display);margin:8px 0 6px;text-wrap:balance}
+.tour p{margin:0;color:var(--ink-2);font-size:14.5px;line-height:1.5;max-width:52ch}
+.tour-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}
+.dots{display:flex;gap:0}
+.dots button{width:20px;height:24px;border:0;background:transparent;padding:0;cursor:pointer;position:relative}
+.dots button::before{content:"";position:absolute;left:6px;top:8px;width:8px;height:8px;border-radius:50%;border:1px solid var(--muted)}
+.dots button[aria-current="step"]::before{background:var(--ink);border-color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border:1px solid var(--rule);border-radius:6px;background:var(--surface);color:var(--ink);font:500 13.5px/1.2 var(--font-body);cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.ghost{border-color:transparent;background:transparent;padding:4px 6px;color:var(--ink-2);font-size:12.5px}
+.btn.ghost:hover{color:var(--ink);border-color:transparent}
+.free{display:grid;gap:10px;margin-top:12px}
+.ctl{display:grid;grid-template-columns:7.5rem minmax(0,1fr);align-items:center;gap:8px;font-size:13px;color:var(--ink-2)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--rule);border-radius:6px;overflow:hidden;width:max-content;max-width:100%}
+.seg button{border:0;border-right:1px solid var(--rule);background:transparent;color:var(--ink-2);padding:5px 10px;font:500 12.5px/1.2 var(--font-body);cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.range{display:flex;align-items:center;gap:10px}
+.range input{flex:1;min-width:0;accent-color:var(--fill)}
+.range output{font:500 12.5px/1 var(--font-mono);min-width:3.6em;text-align:right;color:var(--ink)}
+.warn{font-size:12.5px;color:var(--keep);margin:0}
+.free .views{display:flex;flex-wrap:wrap;gap:6px}
+.free .views .btn{padding:5px 10px;font-size:12.5px}
+
+.gauges{padding:12px 14px 12px}
+.ghead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.clock{display:flex;align-items:center;gap:7px;font:500 13px/1 var(--font-mono);font-variant-numeric:tabular-nums}
+.clock svg{width:16px;height:16px;flex:none}
+.pill{font:500 11px/1 var(--font-mono);letter-spacing:.04em;padding:4px 7px;border-radius:999px;border:1px solid var(--rule);color:var(--ink-2)}
+.pill.on{border-color:var(--water);color:var(--ink)}
+.gcap{margin:10px 0 0;font:500 11px/1.2 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.gauge-row{display:flex;justify-content:space-between;gap:4px;margin-top:6px}
+.gauge{margin:0;display:flex;flex-direction:column;align-items:center}
+.gauge svg{width:58px;height:auto;display:block}
+.gauge figcaption{display:flex;align-items:baseline;gap:6px;margin-top:2px}
+.gauge figcaption b{font:600 16px/1 var(--font-display);letter-spacing:.04em}
+.gauge figcaption span{font:500 12px/1 var(--font-mono);font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.plate{fill:var(--plate);stroke:var(--rule)}
+.pk{fill:var(--plate-ink)}
+.gnum{fill:var(--muted);font:500 9.5px var(--font-mono);text-anchor:end}
+.gw{fill:var(--water);opacity:.5}
+.gwl{stroke:var(--water);stroke-width:2}
+.mk{fill:var(--keep)}
+.mf{fill:var(--fill)}
+.glegend{display:flex;gap:14px;justify-content:center;margin-top:6px;font-size:12px;color:var(--ink-2)}
+.glegend i{display:inline-block;width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-right:8px solid var(--keep);margin-right:5px;vertical-align:-1px}
+.glegend .f i{border-right-color:var(--fill)}
+.links{list-style:none;margin:10px 0 0;padding:0;border-top:1px solid var(--rule)}
+.links li{display:grid;grid-template-columns:4.6rem minmax(0,1fr) auto;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--rule);font-size:12.5px}
+.links li:last-child{border-bottom:0}
+.links .ln{font:600 13px/1.2 var(--font-display);letter-spacing:.04em;text-transform:uppercase}
+.links .st{display:flex;align-items:center;gap:6px;color:var(--ink-2);min-width:0}
+.links .st em{font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.links .q{font:500 12px/1 var(--font-mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+.sd{flex:none;width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.sd.flow{background:var(--water)}
+.sd.trickle{background:transparent;border:2px solid var(--water)}
+.sd.hold{border-radius:2px;background:var(--fill)}
+.sd.sealed{border-radius:2px;background:var(--keep)}
+.pause{border:1px solid var(--rule);background:transparent;border-radius:6px;width:28px;height:26px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink)}
+.pause svg{width:12px;height:12px}
+
+@media (min-width:960px){
+  .viewport{height:clamp(580px,80vh,880px)}
+  .hud{position:absolute;inset:0;display:block;padding:0;background:transparent;pointer-events:none}
+  .hud .tour{position:absolute;left:max(20px,env(safe-area-inset-left,0px));bottom:20px;width:min(440px,38%);pointer-events:auto;background:var(--hud);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  .hud .gauges{position:absolute;right:max(20px,env(safe-area-inset-right,0px));top:20px;width:300px;pointer-events:auto;background:var(--hud);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  .mini{display:none}
+}
+
+/* brief */
+.brief{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:8px 40px}
+.sec{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding-block:38px;border-top:1px solid var(--rule)}
+.sec:first-child{border-top:0}
+@media (min-width:900px){.sec{grid-template-columns:230px minmax(0,1fr);gap:44px}}
+.sec-h h2{font:600 31px/1.04 var(--font-display);margin:8px 0 0;text-wrap:balance}
+.sec-b{min-width:0}
+.sec-b > p,.sec-b > ul,.sec-b > ol.plain{max-width:68ch}
+.sec-b > p{margin:0 0 12px}
+.sec-b p.lead{font-size:17px;line-height:1.55;color:var(--ink)}
+.note{font-size:13.5px;color:var(--muted)}
+h3{font:600 20px/1.15 var(--font-display);margin:0 0 6px;letter-spacing:.01em}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:18px 0 20px;max-width:900px}
+.rule{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:16px 18px}
+.rule h3{display:flex;align-items:center;gap:9px}
+.tri{flex:none;width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-right:11px solid var(--keep)}
+.tri.f{border-right-color:var(--fill)}
+.rule .says{font-weight:600;margin:0 0 6px}
+.rule p{margin:0 0 8px;color:var(--ink-2);font-size:14.5px}
+.rule .set{margin:0;font:500 12.5px/1.45 var(--font-mono);color:var(--muted)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+table{border-collapse:collapse;font-size:14px}
+.tbl{width:100%;min-width:560px}
+.tbl th,.tbl td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--rule)}
+.tbl thead th{font:500 11px/1.3 var(--font-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--ink-2)}
+.tbl tbody th{font-weight:500;color:var(--ink)}
+.tbl td{color:var(--ink-2)}
+.tbl .us{color:var(--ink);font-weight:500;background:var(--surface)}
+.num{font-variant-numeric:tabular-nums}
+.truth{margin:6px 0 12px}
+.truth th,.truth td{border:1px solid var(--rule);padding:9px 14px;text-align:left}
+.truth thead th{font:500 11px/1.3 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--surface-2)}
+.truth tbody th{font-weight:500;background:var(--surface-2);font-size:13.5px}
+.truth td b{font-weight:600}
+.parts{list-style:none;padding:0;margin:14px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));column-gap:36px;counter-reset:part}
+.parts li{display:grid;grid-template-columns:2rem minmax(0,1fr);gap:2px 10px;padding:13px 0;border-top:1px solid var(--rule)}
+.parts li::before{counter-increment:part;content:counter(part);font:500 13px/1.5 var(--font-mono);color:var(--muted);grid-row:span 2}
+.parts b{font-weight:600}
+.parts span{color:var(--ink-2);font-size:14.5px}
+.checks{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:12px;max-width:72ch}
+.checks li{padding-left:22px;position:relative}
+.checks li::before{content:"";position:absolute;left:2px;top:.55em;width:9px;height:9px;border-radius:50%;border:2px solid var(--water)}
+.checks b{font-weight:600}
+ol.steps{list-style:none;padding:0;margin:12px 0 0;counter-reset:st;display:grid;gap:0;max-width:74ch}
+ol.steps li{display:grid;grid-template-columns:2rem minmax(0,1fr);gap:10px;padding:11px 0;border-top:1px solid var(--rule)}
+ol.steps li::before{counter-increment:st;content:counter(st);font:500 13px/1.6 var(--font-mono);color:var(--muted)}
+.facts{display:grid;grid-template-columns:minmax(0,1fr);margin:18px 0 6px;max-width:760px;border-top:1px solid var(--rule)}
+.facts div{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;padding:9px 0;border-bottom:1px solid var(--rule);font-size:14px}
+.facts dt{color:var(--ink-2)}
+.facts dd{margin:0;color:var(--ink);font-weight:500}
+@media (max-width:560px){.facts div{grid-template-columns:minmax(0,1fr);gap:2px}}
+.chartbox{position:relative;max-width:760px;margin:6px 0 4px}
+.chartbox svg{width:100%;height:auto;display:block;touch-action:pan-y}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:4px 0 6px;font-size:13px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend i{width:16px;height:2px;border-radius:1px;background:var(--chart-muted)}
+.legend .p i{background:var(--fill)}
+.grid{stroke:var(--grid);stroke-width:1}
+.axis{fill:var(--muted);font:500 11px var(--font-mono)}
+.axt{fill:var(--muted);font:500 11.5px var(--font-body)}
+.endl{fill:var(--ink-2);font:500 12px var(--font-body)}
+.endl.p{fill:var(--ink);font-weight:600}
+.ser{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.ser.m{stroke:var(--chart-muted)}
+.ser.p{stroke:var(--fill)}
+.xh{stroke:var(--muted);stroke-width:1}
+.hd{stroke:var(--surface);stroke-width:2}
+.hd.m{fill:var(--chart-muted)}
+.hd.p{fill:var(--fill)}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;font:400 12.5px/1.45 var(--font-body);box-shadow:0 4px 16px rgba(0,0,0,.14);min-width:150px;color:var(--ink)}
+.tip .th{font:500 11px/1.3 var(--font-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.tip .tr{display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:8px}
+.tip .tr i{height:2px;background:var(--chart-muted)}
+.tip .tr.p i{background:var(--fill)}
+.tip .tr b{font-weight:600;font-variant-numeric:tabular-nums}
+.tip .tr.p span{color:var(--ink);font-weight:500}
+.tip .tr span{color:var(--ink-2)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;max-width:980px;margin-top:8px}
+.mono{font-family:var(--font-mono);font-size:.92em}
+.qlist{margin:6px 0 0;padding-left:18px;max-width:70ch}
+.qlist li{margin:0 0 6px}
+footer{border-top:1px solid var(--rule);padding-block:18px 26px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+footer p{max-width:1240px;margin:0 auto;font:500 12px/1.5 var(--font-mono);color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+
+<header class="mast">
+  <div class="mast-in">
+    <div>
+      <h1>BundLink</h1>
+      <p class="pitch">A siphon that passes paddy water over the bund by itself. No cutting, no watching.</p>
+    </div>
+    <dl class="mast-meta">
+      <div><dt>Status</dt><dd>Concept 0.1</dd></div>
+      <div><dt>Date</dt><dd>15 Oct 2026</dd></div>
+      
+    </dl>
+  </div>
+</header>
+
+<section class="stage" id="stage" aria-label="Interactive model">
+  <div class="viewport" id="viewport">
+    <canvas id="scene" aria-label="3D model of three terraced paddy plots linked by BundLink units, cut open along the front edge"></canvas>
+    <div class="labels" id="labels"></div>
+    <div class="mini" id="mini" aria-hidden="true"><span id="miniA">A 0.0</span><span id="miniB">B 0.0</span><span id="miniC">C 0.0</span><span id="miniT">20:15</span></div>
+    <div class="vp-msg" id="vpLoading">Building the model…</div>
+    <div class="vp-msg" id="vpNoGL" hidden>This 3D view needs WebGL, which this browser has turned off. The levels and unit status below still run, and the concept sheet has everything else.</div>
+  </div>
+  <div class="hud">
+    <div class="card tour" id="tour">
+      <div class="tour-top">
+        <p class="eyebrow" id="stepNo">Step 1 of 7</p>
+        <button class="btn ghost" id="replay" type="button" aria-label="Replay this step">
+          <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.6-3.7M3 2.5v2.8h2.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Replay
+        </button>
+      </div>
+      <h2 id="stepTitle">One unit on every bund</h2>
+      <p id="stepBody"></p>
+      <div class="free" id="free" hidden>
+        <div class="ctl"><span>Canal water</span><div class="seg" id="segCanal"><button type="button" data-v="1" aria-pressed="true">On</button><button type="button" data-v="0" aria-pressed="false">Off</button></div></div>
+        <div class="ctl"><span>Time speed</span><div class="seg" id="segSpeed"><button type="button" data-v="20" aria-pressed="false">20 min/s</button><button type="button" data-v="60" aria-pressed="true">1 h/s</button><button type="button" data-v="180" aria-pressed="false">3 h/s</button></div></div>
+        <div class="ctl"><span>Crop + soil use</span><div class="seg" id="segUse"><button type="button" data-v="6" aria-pressed="false">6</button><button type="button" data-v="12" aria-pressed="true">12</button><button type="button" data-v="20" aria-pressed="false">20 mm/day</button></div></div>
+        <div class="ctl"><label for="kRange">Keep level</label><div class="range"><input type="range" id="kRange" min="1" max="6" step="0.5" value="3"><output id="kOut" for="kRange">3 cm</output></div></div>
+        <div class="ctl"><label for="fRange">Fill level</label><div class="range"><input type="range" id="fRange" min="5" max="12" step="0.5" value="8"><output id="fOut" for="fRange">8 cm</output></div></div>
+        <p class="warn" id="kfWarn" hidden>Keep is too close to Fill. The Keep ball needs a few cm of room to lift off, so water may stop moving down the chain.</p>
+        <div class="ctl"><span>Look at</span><div class="views"><button class="btn" type="button" data-view="tract">Tract</button><button class="btn" type="button" data-view="inlet">Inlet</button><button class="btn" type="button" data-view="outlet">Outlet</button><button class="btn" type="button" data-view="crown">Crown</button></div></div>
+        <div class="ctl"><span>Part labels</span><div class="seg" id="segLabels"><button type="button" data-v="1" aria-pressed="true">Show</button><button type="button" data-v="0" aria-pressed="false">Hide</button></div></div>
+      </div>
+      <div class="tour-nav">
+        <button class="btn" id="prev" type="button">Back</button>
+        <div class="dots" id="dots" role="group" aria-label="Tour steps"></div>
+        <button class="btn primary" id="next" type="button">Next</button>
+        <button class="btn" id="restart" type="button" hidden>Restart tour</button>
+      </div>
+    </div>
+    <div class="card gauges" id="gauges">
+      <div class="ghead">
+        <div class="clock">
+          <svg id="icSun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2" fill="currentColor"/><g stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M8 1.2v1.8M8 13v1.8M1.2 8h1.8M13 8h1.8M3.2 3.2l1.3 1.3M11.5 11.5l1.3 1.3M3.2 12.8l1.3-1.3M11.5 4.5l1.3-1.3"/></g></svg>
+          <svg id="icMoon" viewBox="0 0 16 16" aria-hidden="true" hidden><path d="M10.8 1.9a6.2 6.2 0 1 0 3.3 9.6A5.2 5.2 0 0 1 10.8 1.9z" fill="currentColor"/></svg>
+          <span id="clockText">Day 1 · 17:40</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="pill" id="canalPill">Canal off</span>
+          <button class="pause" id="pauseBtn" type="button" aria-label="Pause the simulation">
+            <svg id="icPause" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5h2.5v9H2.5zM7 1.5h2.5v9H7z" fill="currentColor"/></svg>
+            <svg id="icPlay" viewBox="0 0 12 12" aria-hidden="true" hidden><path d="M3 1.5l7 4.5-7 4.5z" fill="currentColor"/></svg>
+          </button>
+        </div>
+      </div>
+      <p class="gcap">Water depth, cm above soil</p>
+      <div class="gauge-row" id="gaugeRow"></div>
+      <div class="glegend"><span><i></i>Keep</span><span class="f"><i></i>Fill</span></div>
+      <ul class="links" id="links"></ul>
+    </div>
+  </div>
+</section>
+
+<main class="brief">
+
+  <section class="sec" id="today">
+    <header class="sec-h"><p class="eyebrow">Why</p><h2>How water moves between plots today</h2></header>
+    <div class="sec-b">
+      <p class="lead">On most paddy tracts, water passes from plot to plot through cuts in the bund. Someone has to open each cut, watch the lower plot fill and close the cut again, often at night when rotation water arrives.</p>
+      <p>Every cycle weakens the bund at the same spot. The flow is hard to judge by eye, so plots are over- or under-filled, and water that overshoots runs off the last plot in the chain.</p>
+      <p>BundLink replaces the cut with a pipe that rests on top of the bund and decides for itself when to run. It uses only floats, a ball and a siphon. There is no power, no electronics and no hole in the bund.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="rules">
+    <header class="sec-h"><p class="eyebrow">How it works</p><h2>Two rules, two settings</h2></header>
+    <div class="sec-b">
+      <p>Each unit carries water from one plot to the next. It runs only when both of its rules allow it, and each rule has one setting that you make once per season.</p>
+      <div class="rules">
+        <div class="rule">
+          <h3><i class="tri" aria-hidden="true"></i>Keep, in the upper field</h3>
+          <p class="says">Never draw the upper field below its Keep level.</p>
+          <p>A hollow ball sits on the inlet mouth whenever the upper field is at or below Keep. This protects the upper field's water and keeps the pipe full.</p>
+          <p class="set">Setting: slide the inlet head up or down its riser, marked in cm.</p>
+        </div>
+        <div class="rule">
+          <h3><i class="tri f" aria-hidden="true"></i>Fill, in the lower field</h3>
+          <p class="says">Stop when the lower field reaches its Fill level.</p>
+          <p>A float tips a rocker that lowers a rubber cap onto the outlet as the lower field fills. The flow slows, then stops.</p>
+          <p class="set">Setting: the length of the float rod, marked in cm.</p>
+        </div>
+      </div>
+      <div class="scroll">
+        <table class="truth">
+          <thead><tr><th scope="col"></th><th scope="col">Lower field below Fill</th><th scope="col">Lower field at Fill</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Upper field above Keep</th><td><b>Flows</b></td><td>Holds</td></tr>
+            <tr><th scope="row">Upper field at Keep</th><td>Sealed</td><td>Sealed</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Chain the units and a whole tract fills from the top plot down, then holds. After that, the canal only replaces what the crop and the soil take.</p>
+      <p class="note">Set Keep well below Fill for the same field, about 5 cm apart on steep terraces. The ball only lifts off a little above Keep (see sizing), and it needs that room to let water pass down the chain.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="parts">
+    <header class="sec-h"><p class="eyebrow">Parts</p><h2>Inside one unit</h2></header>
+    <div class="sec-b">
+      <p>Listed in the order the water meets them. Everything except the ball, the float and the rocker is standard PVC plumbing from a hardware shop.</p>
+      <ol class="parts">
+        <li><b>Inlet cage and water-seal cup</b><span>Sits in the upper field. Water comes in through the mesh from the surface layer, away from the mud on the bottom. The cup around the mouth keeps the seat under water even when the field drops.</span></li>
+        <li><b>Keep ball</b><span>A smooth 15 cm hollow float ball on a rubber seat. At or below Keep it rests on the mouth, and the pipe's suction holds it shut. It lifts off a little above Keep, so it doesn't chatter.</span></li>
+        <li><b>Keep adjuster</b><span>The cup, seat and cage slide together on the inlet riser. A scale in cm sets Keep.</span></li>
+        <li><b>Siphon pipe and saddle</b><span>63 mm PVC with long bends, resting on a saddle across the bund top. Nothing goes through the bund.</span></li>
+        <li><b>Clear crown and prime cap</b><span>A clear section at the high point shows from the bund whether the pipe is full. The screw cap is where you pour in water to prime it.</span></li>
+        <li><b>Outlet J-trap</b><span>The outlet dips into the mud and turns back up, like a sink trap, so the pipe end always sits in water.</span></li>
+        <li><b>Rocker and rubber cap</b><span>A seesaw on a stake with a 2:1 ratio. A push rod on the short end carries the rubber cap over the outlet mouth; the long end carries the float rod.</span></li>
+        <li><b>Fill float in a perforated tube</b><span>A 2 L float on an adjustable rod, inside a drilled 110 mm tube that keeps out weeds and calms waves. The rod length sets Fill. The same tube works as an AWD field tube.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="sec" id="prime">
+    <header class="sec-h"><p class="eyebrow">The hard part</p><h2>Why it stays primed</h2></header>
+    <div class="sec-b">
+      <p>A siphon only works while the pipe is full of water. Most siphons fail because air gets in when the flow stops, so the design deals with that first.</p>
+      <ul class="checks">
+        <li><b>Both ends stay under water.</b> The Keep ball seals while the cup still holds water, and the outlet's J-trap can't drain. A seal that leaks a little leaks water, never air.</li>
+        <li><b>Nothing passes through the pipe wall where the pressure is below atmospheric.</b> Both valves sit at the submerged ends and act from outside the pipe, so there are no shaft seals to suck in air.</li>
+        <li><b>Running water sweeps bubbles out.</b> At 10 cm of head the water moves at about 0.6 m/s, enough to carry small bubbles down the outlet leg. Any air that stays collects in the clear crown, where you can see it.</li>
+        <li><b>Re-priming takes about a minute.</b> Clip both ends shut, top up through the cap, then unclip. At season start this is the only setup the pipe needs.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="sec" id="sizing">
+    <header class="sec-h"><p class="eyebrow">Numbers</p><h2>Sizing a unit</h2></header>
+    <div class="sec-b">
+      <p>Flow depends on the head: how far the upper water surface sits above the lower one, or above the outlet mouth when the lower field is lower than that.</p>
+      <h3 style="margin-top:14px">Flow through one unit</h3>
+      <div class="legend" aria-hidden="true"><span class="p"><i></i>63 mm, proposed</span><span><i></i>Other pipe sizes</span></div>
+      <div class="chartbox" id="flowChart"></div>
+      <div class="scroll">
+        <table class="tbl num" aria-label="Flow in litres per second by head and pipe size">
+          <thead><tr><th scope="col">Head across the unit</th><th scope="col">5 cm</th><th scope="col">10 cm</th><th scope="col">20 cm</th><th scope="col">30 cm</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">50 mm pipe</th><td>0.66 L/s</td><td>0.93 L/s</td><td>1.33 L/s</td><td>1.64 L/s</td></tr>
+            <tr class="us"><th scope="row">63 mm pipe</th><td>1.07 L/s</td><td>1.52 L/s</td><td>2.17 L/s</td><td>2.66 L/s</td></tr>
+            <tr><th scope="row">75 mm pipe</th><td>1.54 L/s</td><td>2.19 L/s</td><td>3.11 L/s</td><td>3.82 L/s</td></tr>
+            <tr><th scope="row">90 mm pipe</th><td>2.26 L/s</td><td>3.21 L/s</td><td>4.56 L/s</td><td>5.59 L/s</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <dl class="facts">
+        <div><dt>Daily top-up for a 0.1 ha plot that uses 10 mm a day</dt><dd>About 11 minutes of flow at 10 cm head</dd></div>
+        <div><dt>Raising a 0.1 ha plot by 5 cm</dt><dd>About 9 hours at 10 cm head, 6 hours at 25 cm</dd></div>
+        <div><dt>First unit in a chain of six 0.1 ha plots</dt><dd>About 66 minutes of flow a day at 10 cm head</dd></div>
+        <div><dt>Water needed to prime a 63 mm unit</dt><dd>About 7 litres</dd></div>
+        <div><dt>Force to hold the outlet cap shut</dt><dd>5 N at 20 cm head, 10 N at 40 cm</dd></div>
+        <div><dt>Force from a 2 L float on a 2:1 rocker</dt><dd>14 N half-submerged, 33 N fully submerged</dd></div>
+      </dl>
+      <h3 style="margin-top:22px">How far above Keep the ball lifts off</h3>
+      <p>The pipe's suction holds the ball on its seat, so the upper field has to rise a little above Keep before the ball floats free. The stronger the head, the bigger that margin. Figures are for a 15 cm ball on a 50 mm seat.</p>
+      <div class="scroll">
+        <table class="tbl num">
+          <thead><tr><th scope="col">Head across the unit</th><th scope="col">5 cm</th><th scope="col">10 cm</th><th scope="col">20 cm</th><th scope="col">30 cm</th><th scope="col">40 cm</th></tr></thead>
+          <tbody><tr><th scope="row">Lifts off above Keep</th><td>0.8 cm</td><td>1.6 cm</td><td>2.8 cm</td><td>4.0 cm</td><td>5.1 cm</td></tr></tbody>
+        </table>
+      </div>
+      <p class="note" style="margin-top:10px">A 15 cm ball keeps lifting off up to about 80 cm of head. A 12 cm ball would stay stuck shut above about 40 cm, which some terraces exceed, so 15 cm is the smallest to use.</p>
+      <p class="note">Assumes 2.4 m of thin-wall PVC (58 mm bore for 63 mm), long-radius bends, a total fitting loss coefficient of 5 plus pipe friction, and water at 30 °C. Bench tests should replace these numbers.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="season">
+    <header class="sec-h"><p class="eyebrow">Use</p><h2>A season with BundLink</h2></header>
+    <div class="sec-b">
+      <ol class="steps">
+        <li><span>Prepare the land and form the bunds as usual. Install the units after the last bund pass.</span></li>
+        <li><span>Set each unit across its bund. Push the inlet head into the upper field's mud and the float tube into the lower field's.</span></li>
+        <li><span>Set Keep and Fill on their scales, for example Keep 3 cm and Fill 8 cm.</span></li>
+        <li><span>Prime: clip both ends shut, pour about 7 L into the crown, screw the cap on, unclip.</span></li>
+        <li><span>Walk away. When you pass, glance at the clear crowns. Full means working.</span></li>
+        <li><span>Before harvest, lower Fill so the plots drain down. Then lift the units off, rinse them and store them.</span></li>
+      </ol>
+      <p class="note" style="margin-top:12px">Bunds formed by a machine have a consistent profile, so one saddle size can fit every bund in a tract.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="compare">
+    <header class="sec-h"><p class="eyebrow">Alternatives</p><h2>Compared with what farmers use now</h2></header>
+    <div class="sec-b">
+      <div class="scroll">
+        <table class="tbl">
+          <thead><tr><th scope="col"></th><th scope="col">Cut in the bund</th><th scope="col">Lined spillway notch</th><th scope="col">Pipe through the bund, one float</th><th scope="col" class="us">BundLink</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Damage to the bund</th><td>Every cycle</td><td>One permanent cut</td><td>One hole, once</td><td class="us">None</td></tr>
+            <tr><th scope="row">Visits per fill</th><td>Several</td><td>A few</td><td>None</td><td class="us">None</td></tr>
+            <tr><th scope="row">Protects the upper field</th><td>Farmer's judgement</td><td>Yes, by notch height</td><td>No</td><td class="us">Yes, Keep</td></tr>
+            <tr><th scope="row">Stops when the lower field is full</th><td>Farmer's judgement</td><td>No, passes everything down</td><td>Yes</td><td class="us">Yes, Fill</td></tr>
+            <tr><th scope="row">Runs unattended at night</th><td>No</td><td>Partly</td><td>Yes</td><td class="us">Yes</td></tr>
+            <tr><th scope="row">Needs priming</th><td>No</td><td>No</td><td>No</td><td class="us">Once a season</td></tr>
+            <tr><th scope="row">Moves between seasons</th><td>Not applicable</td><td>No</td><td>No</td><td class="us">Yes, lifts off</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="risks">
+    <header class="sec-h"><p class="eyebrow">Risks</p><h2>What could go wrong, and what handles it</h2></header>
+    <div class="sec-b">
+      <div class="scroll">
+        <table class="tbl">
+          <thead><tr><th scope="col">Risk</th><th scope="col">What handles it</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Air gets in and the siphon stops</th><td>Water-sealed ends. The clear crown shows the problem from the bund, and re-priming takes a minute.</td></tr>
+            <tr><th scope="row">Straw, weeds, snails and mud</th><td>Mesh cage, intake from the surface water, float inside a tube, and a full 58 mm bore with no small holes to block.</td></tr>
+            <tr><th scope="row">Plots nearly level, so little head</th><td>63 mm still passes about 1 L/s at 5 cm of head. Use 75 or 90 mm on flat land.</td></tr>
+            <tr><th scope="row">Tractors, harvesters and cattle</th><td>Lifts off in seconds without tools. Low profile and staked feet.</td></tr>
+            <tr><th scope="row">Heavy rain</th><td>Units close when the plots are full. They don't drain floods, so keep the usual drain outlets.</td></tr>
+            <tr><th scope="row">Sun on plastic</th><td>UV-stabilised pipe or a coat of paint, and storage indoors between seasons.</td></tr>
+            <tr><th scope="row">Neighbouring plots with different owners</th><td>Keep protects the upper owner by design. Agree the settings together.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="test">
+    <header class="sec-h"><p class="eyebrow">Next</p><h2>Build and test plan</h2></header>
+    <div class="sec-b">
+      <ol class="steps">
+        <li><span><b>Bench rig.</b> Two drums or tubs at adjustable heights stand in for two plots. Measure flow against head, the levels where the ball and the cap close and reopen, seal leakage, and how long the pipe stays primed while idle. Aim for a week or more.</span></li>
+        <li><span><b>Dirty-water test.</b> Run muddy water with straw and husk through it for a full day, then check the seats and the mesh.</span></li>
+        <li><span><b>Field pilot.</b> Three plots in a chain for one season, beside a chain run the usual way. Record levels daily, farmer visits, re-primes and water used.</span></li>
+        <li><span><b>Refine.</b> Adjust the ball size, seat material, rocker ratio and pipe size from what the pilot shows.</span></li>
+      </ol>
+      <p style="margin-top:14px"><b>Pass marks for the pilot:</b> levels held within 2 cm of their settings, no more than one re-prime per unit per season, and no bund cuts.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="later">
+    <header class="sec-h"><p class="eyebrow">Later</p><h2>Upgrades to keep in mind</h2></header>
+    <div class="sec-b">
+      <ul class="checks">
+        <li><b>AWD latch.</b> A float rod with two stops and an over-centre spring makes the cap snap fully open only when the field has dried to about 15 cm below the soil, then snap shut at Fill. Each unit then runs alternate wetting and drying, the water-saving schedule IRRI promotes, without anyone reading a field tube.</li>
+        <li><b>Through-bund version.</b> If priming proves a nuisance in the pilot, the same Keep ball and Fill rocker fit a pipe laid through the bund, which never needs priming.</li>
+        <li><b>Two sizes.</b> 63 mm for most links, 90 mm for flat land and for the first unit of a long chain, which carries water for every plot below it.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="sec" id="protect">
+    <header class="sec-h"><p class="eyebrow">Before you present</p><h2>Protect the idea first</h2></header>
+    <div class="sec-b">
+      <p>Parts of this already exist on their own: float valves, siphon tubes for furrow irrigation, siphon spillways on dams, bell siphons in aquaponics, and float-driven canal gates that hold a constant upstream or downstream level, such as the AMIL and AVIS/AVIO gates. What could be new is the combination: a portable siphon that sits over a paddy bund, applies both a Keep rule and a Fill rule, keeps both ends water-sealed and is primed by pouring.</p>
+      <p>Before the competition, search Google Patents and the records of Sri Lanka's National Intellectual Property Office, and talk to the university's IP office about filing. Showing an invention in public before filing can count against its novelty.</p>
+      <h3 style="margin-top:18px">Open questions</h3>
+      <ul class="qlist">
+        <li>Should a unit pass storm water down when the upper field gets too deep? That would need a high-level override.</li>
+        <li>What should a unit cost? A parts quote for the first prototype will set the target.</li>
+        <li>PVC is cheap and easy to find, and HDPE survives knocks better. Which one for the pipe?</li>
+        <li>Who sets the levels when neighbouring plots have different owners?</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer><p>BundLink · concept 0.1 · confidential working draft · 15 October 2026. Model not to scale horizontally; heights and pipe sizes are to scale.</p></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+'use strict';
+var $ = function(s){ return document.querySelector(s); };
+var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+/* ---------------- hydraulics (from the sizing model) ---------------- */
+const CURVES = {
+  50:[0,0.29,0.41,0.5,0.58,0.66,0.72,0.78,0.83,0.89,0.94,0.98,1.03,1.07,1.11,1.15,1.19,1.23,1.26,1.3,1.33,1.36,1.4,1.43,1.46,1.49,1.52,1.55,1.58,1.61,1.64,1.67,1.69,1.72,1.75,1.77,1.8,1.82,1.85,1.87,1.9],
+  63:[0,0.47,0.67,0.82,0.95,1.07,1.18,1.27,1.36,1.44,1.52,1.6,1.67,1.74,1.81,1.87,1.94,2.0,2.05,2.11,2.17,2.22,2.27,2.33,2.38,2.43,2.48,2.52,2.57,2.62,2.66,2.71,2.75,2.79,2.84,2.88,2.92,2.96,3.0,3.04,3.08],
+  75:[0,0.68,0.97,1.19,1.38,1.54,1.69,1.83,1.96,2.08,2.19,2.3,2.4,2.5,2.6,2.69,2.78,2.87,2.95,3.03,3.11,3.19,3.26,3.34,3.41,3.48,3.55,3.62,3.69,3.75,3.82,3.88,3.95,4.01,4.07,4.13,4.19,4.25,4.3,4.36,4.42],
+  90:[0,1.0,1.42,1.75,2.02,2.26,2.48,2.68,2.87,3.04,3.21,3.37,3.52,3.67,3.81,3.94,4.07,4.2,4.32,4.44,4.56,4.67,4.78,4.89,5.0,5.1,5.2,5.3,5.4,5.5,5.59,5.68,5.78,5.87,5.96,6.04,6.13,6.21,6.3,6.38,6.46]
+};
+const FLOW63 = CURVES[63];
+function qOfHead(H){
+  if (!(H > 0)) return 0;
+  if (H >= 40) return FLOW63[40] * Math.sqrt(H / 40);
+  const i = Math.floor(H), f = H - i;
+  return FLOW63[i] + (FLOW63[i + 1] - FLOW63[i]) * f;
+}
+const OFFSETS = [[0,0],[5,0.8],[10,1.6],[20,2.8],[30,4.0],[40,5.1]];
+function reopenOffset(H){
+  if (H <= 0) return 0;
+  for (let i = 1; i < OFFSETS.length; i++){
+    if (H <= OFFSETS[i][0]){ const a = OFFSETS[i-1], b = OFFSETS[i]; return a[1] + (b[1]-a[1]) * (H-a[0]) / (b[0]-a[0]); }
+  }
+  return 5.1 + (H - 40) * 0.11;
+}
+
+/* ---------------- simulation (cm, L/s, minutes) ---------------- */
+const ELEV = {canal:55, A:50, B:25, C:0};   // bed or soil elevation, cm
+const MOUTH = 6;                             // outlet mouth height above the lower soil, cm
+const LINKS = [{up:'canal',down:'A'},{up:'A',down:'B'},{up:'B',down:'C'}];
+const FIELDS = ['A','B','C'];
+const sim = {t:0, canalOn:false, lv:{canal:2,A:1,B:1,C:1}, keep:[false,false,false], q:[0,0,0], o:[1,1,1], H:[0,0,0],
+             speed:6, demand:12, K:3, F:8, K0:5, paused:false};
+function keepLevel(j){ return j === 0 ? sim.K0 : sim.K; }
+function simStep(dt){
+  const target = sim.canalOn ? 30 : 2;
+  const diff = target - sim.lv.canal;
+  sim.lv.canal += Math.sign(diff) * Math.min(Math.abs(diff), 1.5 * dt);
+  for (let j = 0; j < 3; j++){
+    const L = LINKS[j], hu = sim.lv[L.up], hd = sim.lv[L.down];
+    const H = (ELEV[L.up] + hu) - (ELEV[L.down] + Math.max(hd, MOUTH));
+    sim.H[j] = H;
+    const K = keepLevel(j);
+    if (sim.keep[j]) { if (hu <= K) sim.keep[j] = false; }
+    else if (hu >= K + reopenOffset(Math.max(0, H))) sim.keep[j] = true;
+    const o = Math.max(0, Math.min(1, (sim.F - hd) / 3));   // 2:1 rocker, cap fully open 3 cm below Fill
+    sim.o[j] = o;
+    sim.q[j] = sim.keep[j] ? qOfHead(H) * o : 0;
+  }
+  const k = 0.006 * dt;                      // cm per (L/s) per minute on a 0.1 ha plot
+  const loss = sim.demand / 10 / 1440 * dt;  // mm/day to cm per step
+  sim.lv.A += k * (sim.q[0] - sim.q[1]) - loss;
+  sim.lv.B += k * (sim.q[1] - sim.q[2]) - loss;
+  sim.lv.C += k * sim.q[2] - loss;
+  for (const f of FIELDS) sim.lv[f] = Math.max(-4, Math.min(28, sim.lv[f]));
+  sim.t += dt;
+}
+function advance(dtReal){
+  const m = dtReal * sim.speed;
+  const n = Math.max(1, Math.ceil(m / 1.0));
+  for (let i = 0; i < n; i++) simStep(m / n);
+}
+function hm(day, h, m){ return (day - 1) * 1440 + h * 60 + m; }
+
+/* ---------------- tour ---------------- */
+const STEPS = [
+  {title:'One unit on every bund', view:'tract',
+   body:'Each BundLink unit rests on top of a bund like a saddle and joins two plots with a siphon pipe. The water goes over the bund, so the bund is never cut. The model is sliced open along the front so you can see inside the pipes.',
+   preset:{t:hm(1,17,40), canalOn:false, canal:2, A:1.2, B:0.8, C:0.6, keep:[0,0,0], speed:6}},
+  {title:'Canal water arrives at 9 pm', view:'canal',
+   body:'Rotation water often comes at night. Nobody has to be in the field. The first unit sees water in the canal and starts filling Field A on its own.',
+   preset:{t:hm(1,20,58), canalOn:true, canal:2, A:1.2, B:0.8, C:0.6, keep:[0,0,0], speed:15}},
+  {title:'Keep: the upper field is protected', view:'inlet',
+   body:'Inside the inlet cage, a hollow ball rests on the pipe mouth while Field A is at or below its Keep level. When A rises a few centimetres above Keep, the ball floats off the seat and the siphon starts pulling water over the bund.',
+   preset:{t:hm(1,23,20), canalOn:true, canal:30, A:5.95, B:1.0, C:0.8, keep:[1,0,0], speed:20}},
+  {title:'Fill: flow stops when the lower field is full', view:'outlet',
+   body:'A float in a perforated tube rides on Field B’s water. As B nears its Fill level, the float tips the rocker and the push rod lowers the rubber cap onto the outlet. The flow slows, then stops.',
+   preset:{t:hm(2,2,10), canalOn:true, canal:30, A:7.0, B:4.0, C:8.4, keep:[1,1,0], speed:40}},
+  {title:'The whole tract fills from the top down', view:'chain',
+   body:'Every unit applies the same two rules to its own pair of plots. Water moves down the chain only as far as it is needed, and nothing runs off the tail end.',
+   preset:{t:hm(2,5,30), canalOn:true, canal:30, A:7.3, B:7.5, C:1.5, keep:[1,1,1], speed:40}},
+  {title:'Rotation over, siphons still primed', view:'crown',
+   body:'When the canal stops, Field A falls to its Keep level and the ball drops onto the seat while it is still under water. The pipe stays full, so the unit starts again by itself when water returns.',
+   preset:{t:hm(2,18,40), canalOn:false, canal:4, A:3.9, B:5.0, C:7.8, keep:[0,1,0], speed:20}},
+  {title:'Try it yourself', view:'tract', free:true,
+   body:'Switch the canal on or off, change the levels, or speed up time. Drag to look around, and pinch or scroll to zoom.',
+   preset:{t:hm(3,7,0), canalOn:true, canal:30, A:7.0, B:6.6, C:5.0, keep:[1,1,1], speed:60}}
+];
+let stepIdx = 0;
+let labelsOn = true;
+let gl = null;
+
+function applyPreset(p, keepSettings){
+  sim.t = p.t; sim.canalOn = p.canalOn; sim.lv.canal = p.canal;
+  sim.lv.A = p.A; sim.lv.B = p.B; sim.lv.C = p.C;
+  sim.keep = p.keep.map(Boolean);
+  sim.speed = p.speed;
+  if (!keepSettings){ sim.K = 3; sim.F = 8; sim.demand = 12; }
+  for (let i = 0; i < 2; i++) simStep(0.0001);
+  if (gl) gl.snap();
+}
+function goStep(i){
+  stepIdx = Math.max(0, Math.min(STEPS.length - 1, i));
+  const s = STEPS[stepIdx];
+  applyPreset(s.preset, false);
+  if (s.free) syncFreeControls(); else labelsOn = true;
+  if (gl) gl.setView(s.view, false);
+  renderTour();
+  updateHUD(true);
+}
+function renderTour(){
+  const s = STEPS[stepIdx];
+  $('#stepNo').textContent = 'Step ' + (stepIdx + 1) + ' of ' + STEPS.length;
+  $('#stepTitle').textContent = s.title;
+  $('#stepBody').textContent = s.body;
+  $('#free').hidden = !s.free;
+  $('#prev').disabled = stepIdx === 0;
+  $('#next').hidden = stepIdx === STEPS.length - 1;
+  $('#restart').hidden = stepIdx !== STEPS.length - 1;
+  const dots = $('#dots').children;
+  for (let i = 0; i < dots.length; i++){
+    if (i === stepIdx) dots[i].setAttribute('aria-current', 'step'); else dots[i].removeAttribute('aria-current');
+  }
+}
+(function buildDots(){
+  const host = $('#dots');
+  STEPS.forEach(function(s, i){
+    const b = document.createElement('button');
+    b.type = 'button'; b.setAttribute('aria-label', 'Step ' + (i + 1) + ': ' + s.title);
+    b.addEventListener('click', function(){ goStep(i); });
+    host.appendChild(b);
+  });
+})();
+$('#next').addEventListener('click', function(){ goStep(stepIdx + 1); });
+$('#prev').addEventListener('click', function(){ goStep(stepIdx - 1); });
+$('#restart').addEventListener('click', function(){ goStep(0); });
+$('#replay').addEventListener('click', function(){
+  const s = STEPS[stepIdx];
+  if (s.free){ applyPreset(s.preset, true); syncFreeControls(); } else { applyPreset(s.preset, false); }
+  if (gl) gl.setView(s.view, false);
+  updateHUD(true);
+});
+
+/* free play controls */
+function setSeg(id, val){
+  document.querySelectorAll('#' + id + ' button').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.v === String(val))); });
+}
+function bindSeg(id, fn){
+  document.querySelectorAll('#' + id + ' button').forEach(function(b){
+    b.addEventListener('click', function(){ setSeg(id, b.dataset.v); fn(b.dataset.v); });
+  });
+}
+bindSeg('segCanal', function(v){ sim.canalOn = v === '1'; updateHUD(true); });
+bindSeg('segSpeed', function(v){ sim.speed = +v; });
+bindSeg('segUse', function(v){ sim.demand = +v; });
+bindSeg('segLabels', function(v){ labelsOn = v === '1'; });
+const kRange = $('#kRange'), fRange = $('#fRange');
+function onLevels(){
+  sim.K = +kRange.value; sim.F = +fRange.value;
+  $('#kOut').textContent = sim.K + ' cm'; $('#fOut').textContent = sim.F + ' cm';
+  $('#kfWarn').hidden = (sim.F - sim.K) >= 4;
+  updateHUD(true);
+}
+kRange.addEventListener('input', onLevels);
+fRange.addEventListener('input', onLevels);
+document.querySelectorAll('.free .views .btn').forEach(function(b){
+  b.addEventListener('click', function(){ if (gl) gl.setView(b.dataset.view, false); });
+});
+function syncFreeControls(){
+  setSeg('segCanal', sim.canalOn ? '1' : '0');
+  setSeg('segSpeed', String(sim.speed));
+  setSeg('segUse', String(sim.demand));
+  setSeg('segLabels', labelsOn ? '1' : '0');
+  kRange.value = sim.K; fRange.value = sim.F; onLevels();
+}
+$('#pauseBtn').addEventListener('click', function(){
+  sim.paused = !sim.paused;
+  $('#icPause').hidden = sim.paused; $('#icPlay').hidden = !sim.paused;
+  $('#pauseBtn').setAttribute('aria-label', sim.paused ? 'Resume the simulation' : 'Pause the simulation');
+});
+
+/* ---------------- HUD ---------------- */
+const G_TOP = 14, G_BOT = 158, G_CM = 12;   // 0..12 cm
+function gy(v){ return G_BOT - Math.max(0, Math.min(12, v)) * G_CM; }
+const gaugeEls = {};
+(function buildGauges(){
+  const row = $('#gaugeRow');
+  FIELDS.forEach(function(f){
+    let s = '<svg viewBox="0 0 58 168" aria-hidden="true">';
+    s += '<rect class="plate" x="16" y="' + (G_TOP - 4) + '" width="26" height="' + (G_BOT - G_TOP + 8) + '" rx="2"/>';
+    for (let c = 0; c < 12; c++){ const r = c % 5; if (r === 0 || r === 2 || r === 4) s += '<rect class="pk" x="24" y="' + gy(c + 1) + '" width="15" height="' + G_CM + '"/>'; }
+    for (let b = 0; b < 12; b += 5){ const e = Math.min(b + 5, 12); s += '<rect class="pk" x="24" y="' + gy(e) + '" width="4" height="' + ((e - b) * G_CM) + '"/>'; }
+    [0, 5, 10].forEach(function(v){ s += '<text class="gnum" x="13" y="' + (gy(v) + 3.5) + '">' + v + '</text>'; });
+    s += '<rect class="gw" x="16" y="' + G_BOT + '" width="26" height="0"/>';
+    s += '<line class="gwl" x1="16" x2="42" y1="' + G_BOT + '" y2="' + G_BOT + '"/>';
+    s += '<path class="mk" d="M44 0 l8 -5.5 v11z"/>';
+    s += '<path class="mf" d="M44 0 l8 -5.5 v11z"/>';
+    s += '</svg>';
+    const fig = document.createElement('figure');
+    fig.className = 'gauge';
+    fig.innerHTML = s + '<figcaption><b>' + f + '</b><span>0.0 cm</span></figcaption>';
+    row.appendChild(fig);
+    gaugeEls[f] = {w: fig.querySelector('.gw'), wl: fig.querySelector('.gwl'), mk: fig.querySelector('.mk'), mf: fig.querySelector('.mf'), val: fig.querySelector('figcaption span')};
+  });
+  const ul = $('#links');
+  ['Canal→A', 'A→B', 'B→C'].forEach(function(n){
+    const li = document.createElement('li');
+    li.innerHTML = '<span class="ln"></span><span class="st"><i class="sd"></i><em></em></span><span class="q"></span>';
+    li.querySelector('.ln').textContent = n;
+    ul.appendChild(li);
+  });
+})();
+function linkState(j){
+  const L = LINKS[j], q = sim.q[j];
+  if (!sim.keep[j]) return {cls:'sealed', text: j === 0 ? 'Sealed, canal low' : 'Sealed, ' + L.up + ' at Keep', q:''};
+  if (q > 0.15) return {cls:'flow', text:'Flowing', q:q.toFixed(1) + ' L/s'};
+  if (q > 0.015) return {cls:'trickle', text:'Topping up', q:q.toFixed(2) + ' L/s'};
+  if (sim.o[j] <= 0.001) return {cls:'hold', text:'Holding, ' + L.down + ' full', q:''};
+  return {cls:'hold', text:'Waiting for head', q:''};
+}
+let hudClock = 0;
+const linkEls = Array.prototype.slice.call(document.querySelectorAll('#links li'));
+function fmtLv(v){ return v < 0.05 ? 'dry' : v.toFixed(1) + ' cm'; }
+function updateHUD(force){
+  const now = performance.now();
+  if (!force && now - hudClock < 110) return;
+  hudClock = now;
+  const day = Math.floor(sim.t / 1440) + 1, mins = Math.floor(sim.t % 1440);
+  const hh = Math.floor(mins / 60), mm = mins % 60;
+  const ts = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+  $('#clockText').textContent = 'Day ' + day + ' · ' + ts;
+  const isDay = mins >= 360 && mins < 1110;
+  $('#icSun').hidden = !isDay; $('#icMoon').hidden = isDay;
+  const pill = $('#canalPill');
+  pill.textContent = sim.canalOn ? 'Canal on' : 'Canal off';
+  pill.classList.toggle('on', sim.canalOn);
+  FIELDS.forEach(function(f){
+    const e = gaugeEls[f], v = sim.lv[f];
+    const y = gy(v);
+    e.w.setAttribute('y', y); e.w.setAttribute('height', Math.max(0, G_BOT - y));
+    e.wl.setAttribute('y1', y); e.wl.setAttribute('y2', y);
+    e.wl.style.opacity = v > 0.05 ? 1 : 0;
+    e.mk.setAttribute('transform', 'translate(0,' + gy(sim.K) + ')');
+    e.mk.style.display = f === 'C' ? 'none' : '';
+    e.mf.setAttribute('transform', 'translate(0,' + gy(sim.F) + ')');
+    e.val.textContent = fmtLv(v);
+  });
+  for (let j = 0; j < 3; j++){
+    const s = linkState(j), li = linkEls[j];
+    li.querySelector('.sd').className = 'sd ' + s.cls;
+    li.querySelector('em').textContent = s.text;
+    li.querySelector('.q').textContent = s.q;
+  }
+  $('#miniA').textContent = 'A ' + Math.max(0, sim.lv.A).toFixed(1);
+  $('#miniB').textContent = 'B ' + Math.max(0, sim.lv.B).toFixed(1);
+  $('#miniC').textContent = 'C ' + Math.max(0, sim.lv.C).toFixed(1) + ' cm';
+  $('#miniT').textContent = ts + (sim.canalOn ? ' · canal on' : ' · canal off');
+}
+
+/* ---------------- flow chart ---------------- */
+(function buildChart(){
+  const host = $('#flowChart');
+  if (!host) return;
+  const NS = 'http://www.w3.org/2000/svg';
+  const W = 640, H = 300, ml = 40, mr = 122, mt = 12, mb = 42, YMAX = 7;
+  const xs = function(v){ return ml + v / 40 * (W - ml - mr); };
+  const ys = function(v){ return H - mb - v / YMAX * (H - mt - mb); };
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('tabindex', '0');
+  svg.setAttribute('aria-label', 'Flow through one unit against head for 50, 63, 75 and 90 mm pipe. The proposed 63 mm unit passes 1.5 litres per second at 10 cm of head and 2.7 at 30 cm. Use the left and right arrow keys to read values.');
+  function el(tag, attrs, parent){ const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; }
+  for (let v = 0; v <= YMAX; v++){
+    el('line', {class:'grid', x1:ml, x2:W - mr, y1:ys(v), y2:ys(v)});
+    const t = el('text', {class:'axis', x:ml - 8, y:ys(v) + 4, 'text-anchor':'end'}); t.textContent = v;
+  }
+  for (let h = 0; h <= 40; h += 10){
+    const t = el('text', {class:'axis', x:xs(h), y:H - mb + 18, 'text-anchor':'middle'}); t.textContent = h;
+  }
+  const xt = el('text', {class:'axt', x:(ml + W - mr) / 2, y:H - 6, 'text-anchor':'middle'}); xt.textContent = 'Head across the unit (cm)';
+  const yt2 = el('text', {class:'axt', x:ml, y:mt + 2, 'text-anchor':'start', dx:6}); yt2.textContent = 'L/s';
+  const order = [50, 75, 90, 63];
+  order.forEach(function(size){
+    const c = CURVES[size];
+    let d = '';
+    for (let h = 0; h <= 40; h++) d += (h ? 'L' : 'M') + xs(h).toFixed(1) + ' ' + ys(c[h]).toFixed(1);
+    el('path', {class:'ser ' + (size === 63 ? 'p' : 'm'), d:d});
+    const lab = el('text', {class:'endl' + (size === 63 ? ' p' : ''), x:xs(40) + 8, y:ys(c[40]) + 4});
+    lab.textContent = size === 63 ? '63 mm, proposed' : size + ' mm';
+  });
+  const xh = el('line', {class:'xh', x1:0, x2:0, y1:mt, y2:H - mb, visibility:'hidden'});
+  const dots = order.map(function(size){ return el('circle', {class:'hd ' + (size === 63 ? 'p' : 'm'), r:4.5, cx:0, cy:0, visibility:'hidden'}); });
+  const hit = el('rect', {x:ml, y:mt, width:W - ml - mr, height:H - mt - mb, fill:'transparent'});
+  host.appendChild(svg);
+  const tip = document.createElement('div');
+  tip.className = 'tip'; tip.hidden = true; host.appendChild(tip);
+  let cur = 10;
+  function show(h){
+    cur = Math.max(0, Math.min(40, h));
+    const x = xs(cur);
+    xh.setAttribute('x1', x); xh.setAttribute('x2', x); xh.setAttribute('visibility', 'visible');
+    order.forEach(function(size, i){ dots[i].setAttribute('cx', x); dots[i].setAttribute('cy', ys(CURVES[size][cur])); dots[i].setAttribute('visibility', 'visible'); });
+    tip.textContent = '';
+    const th = document.createElement('div'); th.className = 'th'; th.textContent = 'Head ' + cur + ' cm'; tip.appendChild(th);
+    [90, 75, 63, 50].forEach(function(size){
+      const r = document.createElement('div'); r.className = 'tr' + (size === 63 ? ' p' : '');
+      const i = document.createElement('i'); const sp = document.createElement('span'); const b = document.createElement('b');
+      sp.textContent = size + ' mm'; b.textContent = CURVES[size][cur].toFixed(2) + ' L/s';
+      r.appendChild(i); r.appendChild(sp); r.appendChild(b); tip.appendChild(r);
+    });
+    tip.hidden = false;
+    const box = svg.getBoundingClientRect(), scale = box.width / W;
+    let left = x * scale + 14;
+    if (left + 170 > box.width) left = x * scale - 184;
+    tip.style.left = Math.max(0, left) + 'px';
+    tip.style.top = (mt * scale + 4) + 'px';
+  }
+  function hide(){ xh.setAttribute('visibility', 'hidden'); dots.forEach(function(d){ d.setAttribute('visibility', 'hidden'); }); tip.hidden = true; }
+  function fromEvent(ev){
+    const box = svg.getBoundingClientRect();
+    const vx = (ev.clientX - box.left) / box.width * W;
+    return Math.round((vx - ml) / (W - ml - mr) * 40);
+  }
+  hit.addEventListener('pointermove', function(ev){ show(fromEvent(ev)); });
+  hit.addEventListener('pointerdown', function(ev){ show(fromEvent(ev)); });
+  hit.addEventListener('pointerleave', hide);
+  svg.addEventListener('focus', function(){ show(cur); });
+  svg.addEventListener('blur', hide);
+  svg.addEventListener('keydown', function(ev){
+    if (ev.key === 'ArrowRight'){ show(cur + 1); ev.preventDefault(); }
+    else if (ev.key === 'ArrowLeft'){ show(cur - 1); ev.preventDefault(); }
+  });
+})();
+
+/* ---------------- 3D model ---------------- */
+function init3D(){
+  if (!window.THREE) throw new Error('three.js did not load');
+  const T = window.THREE;
+  const viewport = $('#viewport');
+  const canvas = $('#scene');
+  const renderer = new T.WebGLRenderer({canvas: canvas, antialias: true, powerPreference: 'high-performance'});
+  const small = Math.min(window.innerWidth, window.innerHeight) < 700;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.75 : 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = T.PCFSoftShadowMap;
+  renderer.localClippingEnabled = true;
+
+  const CUTZ = 2.9, FACEZ = CUTZ - 0.045, BACKZ = -3.2, BASE = -0.6;
+  const SOIL = {canal:0.55, A:0.50, B:0.25, C:0.00};
+  const UNITDEF = [
+    {bx:-7.5, up:'canal', down:'A', bundTop:0.95, name:'Canal → A unit'},
+    {bx:-2.5, up:'A', down:'B', bundTop:0.80, name:'A → B unit'},
+    {bx: 2.5, up:'B', down:'C', bundTop:0.55, name:'B → C unit'}
+  ];
+
+  const scene = new T.Scene();
+  scene.background = new T.Color(0xbcd6e3);
+  scene.fog = new T.Fog(0xbcd6e3, 34, 110);
+  const camera = new T.PerspectiveCamera(40, 1, 0.05, 400);
+  scene.add(camera);
+
+  let controls;
+  if (T.OrbitControls){
+    controls = new T.OrbitControls(camera, canvas);
+    controls.enableDamping = true; controls.dampingFactor = 0.08;
+    controls.minDistance = 0.45; controls.maxDistance = 36;
+    controls.maxPolarAngle = Math.PI * 0.495;
+    controls.rotateSpeed = 0.7; controls.zoomSpeed = 0.9; controls.screenSpacePanning = true;
+  } else {
+    controls = {target: new T.Vector3(), update: function(){}, enabled: true, addEventListener: function(){}};
+  }
+
+  /* lights and sky */
+  const hemi = new T.HemisphereLight(0xe6f1ff, 0x5d6b45, 0.8); scene.add(hemi);
+  const sun = new T.DirectionalLight(0xfff2e0, 1.4);
+  sun.castShadow = true;
+  const sm = small ? 1024 : 2048;
+  sun.shadow.mapSize.set(sm, sm);
+  const sc = sun.shadow.camera; sc.left = -14; sc.right = 14; sc.top = 10; sc.bottom = -10; sc.near = 1; sc.far = 90;
+  sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02;
+  sun.target.position.set(-0.8, 0, 0);
+  scene.add(sun); scene.add(sun.target);
+  const moon = new T.DirectionalLight(0xa9bcff, 0); moon.position.set(-12, 20, 14); scene.add(moon);
+  const camLight = new T.PointLight(0xe8eeff, 0, 8, 1.4); camera.add(camLight);
+
+  const C = function(h){ return new T.Color(h); };
+  const SKY_N = C(0x13203B), SKY_D = C(0xBCD6E3), SKY_T = C(0xE7AF80);
+  const HEMI_N = C(0x46598A), HEMI_D = C(0xE6F1FF), GND_N = C(0x141B17), GND_D = C(0x5D6B45);
+  const SUN_LO = C(0xFFB27A), SUN_HI = C(0xFFF4E6);
+  const tmpC = new T.Color();
+
+  const starGeo = new T.BufferGeometry();
+  const sp = new Float32Array(700 * 3);
+  for (let i = 0; i < 700; i++){
+    const th = Math.random() * Math.PI * 2, ph = Math.random() * Math.PI * 0.42, r = 150;
+    sp[i*3] = r * Math.sin(ph) * Math.cos(th); sp[i*3+1] = r * Math.cos(ph) + 5; sp[i*3+2] = r * Math.sin(ph) * Math.sin(th) - 30;
+  }
+  starGeo.setAttribute('position', new T.BufferAttribute(sp, 3));
+  const starMat = new T.PointsMaterial({color:0xffffff, size:0.7, sizeAttenuation:true, transparent:true, opacity:0, fog:false, depthWrite:false});
+  scene.add(new T.Points(starGeo, starMat));
+  const moonMesh = new T.Mesh(new T.SphereGeometry(2.6, 24, 16), new T.MeshBasicMaterial({color:0xF6F2DE, fog:false, transparent:true}));
+  moonMesh.position.set(-46, 52, -110); scene.add(moonMesh);
+
+  function smooth(a, b, x){ const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+  function setSky(hour){
+    const e = Math.sin((hour - 6) / 12 * Math.PI);
+    const day = smooth(-0.06, 0.3, e);
+    const tw = Math.max(0, 1 - Math.abs(e) / 0.3);
+    tmpC.copy(SKY_N).lerp(SKY_D, day).lerp(SKY_T, tw * 0.6);
+    scene.background.copy(tmpC); scene.fog.color.copy(tmpC);
+    hemi.color.copy(HEMI_N).lerp(HEMI_D, day);
+    hemi.groundColor.copy(GND_N).lerp(GND_D, day);
+    hemi.intensity = 0.66 + 0.2 * day;
+    const az = (hour - 6) / 12 * Math.PI;
+    sun.position.set(-24 * Math.cos(az), 4 + 26 * Math.max(0.04, e), 10);
+    sun.intensity = 1.45 * day;
+    sun.color.copy(SUN_LO).lerp(SUN_HI, smooth(0, 0.45, e));
+    moon.intensity = 0.55 * (1 - day);
+    camLight.intensity = 0.6 * (1 - day);
+    starMat.opacity = 0.9 * (1 - day);
+    moonMesh.material.opacity = 1 - day;
+    moonMesh.visible = day < 0.98;
+  }
+
+  /* materials and textures */
+  const clip = [new T.Plane(new T.Vector3(0, 0, -1), CUTZ)];
+  function canvasTex(w, h, draw){ const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); return c; }
+  const perfCanvas = canvasTex(128, 128, function(g){ g.fillStyle = '#fff'; g.fillRect(0, 0, 128, 128); g.fillStyle = '#000'; for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++){ g.beginPath(); g.arc(16 + x * 32 + (y % 2) * 16, 16 + y * 32, 7, 0, Math.PI * 2); g.fill(); } });
+  const perfTex = new T.CanvasTexture(perfCanvas); perfTex.wrapS = perfTex.wrapT = T.RepeatWrapping; perfTex.repeat.set(5, 4);
+  const meshCanvas = canvasTex(64, 64, function(g){ g.fillStyle = '#000'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#fff'; for (let i = 0; i < 4; i++){ g.fillRect(i * 16, 0, 3, 64); g.fillRect(0, i * 16, 64, 3); } });
+  const meshTex = new T.CanvasTexture(meshCanvas); meshTex.wrapS = meshTex.wrapT = T.RepeatWrapping; meshTex.repeat.set(14, 4);
+  const meshTopTex = meshTex.clone(); meshTopTex.needsUpdate = true; meshTopTex.repeat.set(4, 4);
+  const rippleCanvas = canvasTex(128, 128, function(g, w, h){
+    const img = g.createImageData(w, h); const waves = [[3,1,0.6,0.2],[1,4,0.5,1.3],[5,-2,0.35,2.1],[-2,3,0.45,0.7]];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
+      let dx = 0, dy = 0;
+      for (const wv of waves){ const ph = (wv[0] * x + wv[1] * y) / w * Math.PI * 2 + wv[3]; dx += wv[2] * wv[0] * Math.cos(ph); dy += wv[2] * wv[1] * Math.cos(ph); }
+      const nx = -dx * 0.12, ny = -dy * 0.12, nz = 1, l = Math.hypot(nx, ny, nz); const i = (y * w + x) * 4;
+      img.data[i] = (nx / l * 0.5 + 0.5) * 255; img.data[i+1] = (ny / l * 0.5 + 0.5) * 255; img.data[i+2] = (nz / l * 0.5 + 0.5) * 255; img.data[i+3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+  });
+  const rippleTex = new T.CanvasTexture(rippleCanvas); rippleTex.wrapS = rippleTex.wrapT = T.RepeatWrapping; rippleTex.repeat.set(3, 3);
+  const canalTex = rippleTex.clone(); canalTex.needsUpdate = true; canalTex.repeat.set(1, 6);
+
+  const M = {
+    pvc: new T.MeshStandardMaterial({color:0xD7DBD5, roughness:0.42, metalness:0.05, side:T.DoubleSide, clippingPlanes:clip, clipShadows:true}),
+    pipeWater: new T.MeshStandardMaterial({color:0x2A9CA6, roughness:0.15, transparent:true, opacity:0.82, side:T.DoubleSide, clippingPlanes:clip, emissive:0x0B4F55, emissiveIntensity:0.6, depthWrite:false}),
+    clear: new T.MeshStandardMaterial({color:0xF2F7F6, roughness:0.08, transparent:true, opacity:0.24, side:T.DoubleSide, clippingPlanes:clip, depthWrite:false}),
+    cupWater: new T.MeshStandardMaterial({color:0x3E8E8A, roughness:0.2, transparent:true, opacity:0.6, side:T.DoubleSide, clippingPlanes:clip, depthWrite:false}),
+    rubber: new T.MeshStandardMaterial({color:0x1F2321, roughness:0.9}),
+    ball: new T.MeshStandardMaterial({color:0xD0612C, roughness:0.36}),
+    float: new T.MeshStandardMaterial({color:0xF0EEE6, roughness:0.5}),
+    floatBand: new T.MeshStandardMaterial({color:0x0E7C84, roughness:0.5}),
+    steel: new T.MeshStandardMaterial({color:0xAEB6BA, roughness:0.32, metalness:0.7}),
+    cap: new T.MeshStandardMaterial({color:0x2D3B42, roughness:0.6}),
+    saddle: new T.MeshStandardMaterial({color:0x38463F, roughness:0.7, clippingPlanes:clip}),
+    perf: new T.MeshStandardMaterial({color:0xDADFD6, roughness:0.6, alphaMap:perfTex, alphaTest:0.5, side:T.DoubleSide, clippingPlanes:clip}),
+    mesh: new T.MeshStandardMaterial({color:0x48534E, roughness:0.6, metalness:0.3, alphaMap:meshTex, alphaTest:0.5, side:T.DoubleSide, clippingPlanes:clip}),
+    meshTop: new T.MeshStandardMaterial({color:0x48534E, roughness:0.6, metalness:0.3, alphaMap:meshTopTex, alphaTest:0.5, side:T.DoubleSide, clippingPlanes:clip}),
+    bead: new T.MeshBasicMaterial({color:0xB8FCFF}),
+    skirt: new T.MeshStandardMaterial({color:0x7FD6DC, roughness:0.1, transparent:true, opacity:0.5, side:T.DoubleSide, clippingPlanes:clip, depthWrite:false, emissive:0x0B4F55, emissiveIntensity:0.4}),
+    bund: new T.MeshStandardMaterial({color:0x6C6B3D, roughness:1}),
+    water: new T.MeshStandardMaterial({color:0x5D8C84, roughness:0.1, metalness:0.15, transparent:true, opacity:0.74, normalMap:rippleTex, normalScale:new T.Vector2(0.35, 0.35), depthWrite:false}),
+    canalWater: new T.MeshStandardMaterial({color:0x4F8A86, roughness:0.1, metalness:0.15, transparent:true, opacity:0.8, normalMap:canalTex, normalScale:new T.Vector2(0.45, 0.45), depthWrite:false}),
+    waterFace: new T.MeshStandardMaterial({color:0x3E7A74, roughness:0.3, transparent:true, opacity:0.55, side:T.DoubleSide, depthWrite:false}),
+    plant: new T.MeshStandardMaterial({color:0xffffff, roughness:0.85, side:T.DoubleSide}),
+    floor: new T.MeshStandardMaterial({color:0x52604A, roughness:1}),
+    trunk: new T.MeshStandardMaterial({color:0x7A6247, roughness:0.9}),
+    leaf: new T.MeshStandardMaterial({color:0x4F7A2E, roughness:0.8, side:T.DoubleSide}),
+    hill: new T.MeshStandardMaterial({color:0x4E6A49, roughness:1})
+  };
+
+  function strataCanvas(h, grass){
+    return canvasTex(128, 512, function(g){
+      const px = function(m){ return m / h * 512; };
+      const grd = g.createLinearGradient(0, 0, 0, 512); grd.addColorStop(0, '#8E5C3D'); grd.addColorStop(1, '#6C4430');
+      g.fillStyle = grd; g.fillRect(0, 0, 128, 512);
+      g.fillStyle = '#675746'; g.fillRect(0, px(0.16), 128, px(0.07));
+      g.fillStyle = grass ? '#4D4A2C' : '#3F3124'; g.fillRect(0, 0, 128, px(0.16));
+      for (let i = 0; i < 900; i++){
+        const y = Math.random() * 512, x = Math.random() * 128, d = y / 512 * h;
+        g.fillStyle = d < 0.16 ? 'rgba(18,12,7,.35)' : d < 0.23 ? 'rgba(40,32,26,.35)' : (Math.random() < 0.5 ? 'rgba(176,116,72,.35)' : 'rgba(84,52,33,.35)');
+        g.fillRect(x, y, 1 + Math.random() * 2.5, 1 + Math.random() * 1.5);
+      }
+    });
+  }
+
+  /* geometry of each unit (metres) */
+  function unitGeom(j){
+    const d = UNITDEF[j], g = {j: j, bx: d.bx, up: d.up, down: d.down, bundTop: d.bundTop, name: d.name};
+    g.upBed = SOIL[d.up]; g.downSoil = SOIL[d.down];
+    g.xr = d.bx - 0.66; g.xd = d.bx - 0.48; g.xd2 = d.bx + 0.48; g.xo = d.bx + 0.66;
+    g.yjb = g.upBed - 0.17; g.yjb2 = g.downSoil - 0.15; g.yc = d.bundTop + 0.075;
+    g.riserTop = g.upBed - 0.01; g.mouthY = g.downSoil + 0.06;
+    g.Lc = 0.15; g.Lf = 0.30; g.Lp = 0.18;
+    g.pivotY = g.downSoil + 0.30;
+    const endClosed = g.mouthY + 0.011 + g.Lp;
+    g.thC = Math.asin((g.pivotY - endClosed) / g.Lc);
+    g.thO = Math.asin((g.pivotY - (endClosed + 0.03)) / g.Lc);
+    g.pivotX = g.xo + g.Lc * Math.cos(g.thC);
+    g.tubeX = g.pivotX + g.Lf * Math.cos((g.thC + g.thO) / 2);
+    return g;
+  }
+  const UG = [0, 1, 2].map(unitGeom);
+
+  /* terrain */
+  const BLOCKS = [
+    {key:'high', x0:-9.6, x1:-8.6, top:0.85, color:0x6F7E45, grass:true},
+    {key:'canal', x0:-8.6, x1:-7.62, top:0.55, color:0x3E3428},
+    {key:'A', x0:-7.62, x1:-2.5, top:0.50, color:0x4A3A2A},
+    {key:'B', x0:-2.5, x1:2.5, top:0.25, color:0x4A3A2A},
+    {key:'C', x0:2.5, x1:7.75, top:0.00, color:0x4A3A2A}
+  ];
+  const notches = {high:[], canal:[], A:[], B:[], C:[]};
+  UG.forEach(function(g){
+    notches[g.up].push([g.xr - 0.15, g.xd + 0.055, g.yjb - 0.045]);
+    notches[g.down].push([g.xd2 - 0.055, g.tubeX + 0.11, g.yjb2 - 0.045]);
+  });
+  const topMats = {};
+  BLOCKS.forEach(function(b){
+    const h = b.top - BASE;
+    const strata = strataCanvas(h, b.grass);
+    const texBox = new T.CanvasTexture(strata); texBox.wrapS = T.RepeatWrapping; texBox.repeat.set(Math.max(1, (b.x1 - b.x0) / 0.8), 1);
+    const sideMat = new T.MeshStandardMaterial({map: texBox, roughness: 1});
+    const topMat = new T.MeshStandardMaterial({color: b.color, roughness: 0.95});
+    topMats[b.key] = topMat;
+    const box = new T.Mesh(new T.BoxGeometry(b.x1 - b.x0, h, FACEZ - BACKZ), [sideMat, sideMat, topMat, sideMat, sideMat, sideMat]);
+    box.position.set((b.x0 + b.x1) / 2, BASE + h / 2, (BACKZ + FACEZ) / 2);
+    box.receiveShadow = true; scene.add(box);
+    const s = new T.Shape();
+    s.moveTo(b.x0, BASE); s.lineTo(b.x1, BASE); s.lineTo(b.x1, b.top);
+    notches[b.key].slice().sort(function(p, q){ return q[0] - p[0]; }).forEach(function(n){
+      s.lineTo(n[1], b.top); s.lineTo(n[1], n[2]); s.lineTo(n[0], n[2]); s.lineTo(n[0], b.top);
+    });
+    s.lineTo(b.x0, b.top); s.lineTo(b.x0, BASE);
+    const texSlab = new T.CanvasTexture(strata); texSlab.wrapS = T.RepeatWrapping; texSlab.repeat.set(1 / 0.8, 1 / h); texSlab.offset.set(0, -BASE / h);
+    const slabMat = new T.MeshStandardMaterial({map: texSlab, roughness: 1});
+    const slab = new T.Mesh(new T.ExtrudeGeometry(s, {depth: CUTZ - FACEZ, bevelEnabled: false}), [slabMat, topMat]);
+    slab.position.z = FACEZ; slab.receiveShadow = true; scene.add(slab);
+  });
+  const floor = new T.Mesh(new T.PlaneGeometry(400, 400), M.floor);
+  floor.rotation.x = -Math.PI / 2; floor.position.y = BASE - 0.002; floor.receiveShadow = true; scene.add(floor);
+
+  function bundShape(hL, hR, top){
+    const s = new T.Shape(), lo = Math.min(hL, hR) - 0.05;
+    s.moveTo(-0.25, lo); s.lineTo(0.25, lo); s.lineTo(0.25, hR);
+    s.lineTo(0.17, hR + (top - hR) * 0.55); s.lineTo(0.11, top - 0.025);
+    s.quadraticCurveTo(0.08, top, 0.05, top); s.lineTo(-0.05, top);
+    s.quadraticCurveTo(-0.08, top, -0.11, top - 0.025);
+    s.lineTo(-0.17, hL + (top - hL) * 0.55); s.lineTo(-0.25, hL); s.lineTo(-0.25, lo);
+    return s;
+  }
+  [[-8.72, 0.85, 0.55, 0.97], [-7.5, 0.55, 0.50, 0.95], [-2.5, 0.50, 0.25, 0.80], [2.5, 0.25, 0.00, 0.55], [7.5, 0.00, 0.00, 0.30]].forEach(function(b){
+    const m = new T.Mesh(new T.ExtrudeGeometry(bundShape(b[1], b[2], b[3]), {depth: CUTZ - BACKZ, bevelEnabled: false, curveSegments: 6}), M.bund);
+    m.position.set(b[0], 0, BACKZ); m.castShadow = true; m.receiveShadow = true; scene.add(m);
+  });
+  [['A', -7.5, -2.5], ['B', -2.5, 2.5], ['C', 2.5, 7.5]].forEach(function(b){
+    const soil = SOIL[b[0]];
+    const m = new T.Mesh(new T.ExtrudeGeometry(bundShape(soil, soil, soil + 0.30), {depth: b[2] - b[1], bevelEnabled: false, curveSegments: 6}), M.bund);
+    m.rotation.y = Math.PI / 2; m.position.set(b[1], 0, -2.95); m.castShadow = true; m.receiveShadow = true; scene.add(m);
+  });
+
+  /* water */
+  const WATER = {};
+  function waterBody(key, x0, x1, z0, mat, fx0, fx1){
+    const plane = new T.Mesh(new T.PlaneGeometry(x1 - x0, CUTZ - z0), mat);
+    plane.rotation.x = -Math.PI / 2; plane.position.set((x0 + x1) / 2, 0, (z0 + CUTZ) / 2); plane.receiveShadow = true;
+    plane.renderOrder = 2; scene.add(plane);
+    const face = new T.Mesh(new T.PlaneGeometry(fx1 - fx0, 1), M.waterFace);
+    face.position.set((fx0 + fx1) / 2, 0, CUTZ + 0.002); face.renderOrder = 3; scene.add(face);
+    WATER[key] = {plane: plane, face: face};
+  }
+  waterBody('canal', -8.72, -7.5, BACKZ, M.canalWater, -8.45, -7.74);
+  waterBody('A', -7.5, -2.5, -2.95, M.water, -7.26, -2.74);
+  waterBody('B', -2.5, 2.5, -2.95, M.water, -2.26, 2.26);
+  waterBody('C', 2.5, 7.5, -2.95, M.water, 2.74, 7.26);
+
+  /* rice */
+  (function plants(){
+    const geo = new T.CylinderGeometry(0.045, 0.01, 0.22, 6, 1, true); geo.translate(0, 0.11, 0);
+    const spots = [];
+    [['A', -7.5, -2.5], ['B', -2.5, 2.5], ['C', 2.5, 7.5]].forEach(function(f){
+      for (let x = f[1] + 0.42; x < f[2] - 0.38; x += 0.27){
+        for (let z = -2.6; z < 2.45; z += 0.27) spots.push([x + (Math.random() - 0.5) * 0.06, SOIL[f[0]], z + (Math.random() - 0.5) * 0.06]);
+      }
+    });
+    const inst = new T.InstancedMesh(geo, M.plant, spots.length);
+    const dm = new T.Object3D(), col = new T.Color(), c1 = new T.Color(0x52802A), c2 = new T.Color(0x739E3A);
+    spots.forEach(function(p, i){
+      dm.position.set(p[0], p[1], p[2]);
+      dm.rotation.set((Math.random() - 0.5) * 0.22, Math.random() * Math.PI * 2, (Math.random() - 0.5) * 0.22);
+      const s = 0.85 + Math.random() * 0.35; dm.scale.set(s, s * (0.9 + Math.random() * 0.25), s);
+      dm.updateMatrix(); inst.setMatrixAt(i, dm.matrix);
+      col.copy(c1).lerp(c2, Math.random()); inst.setColorAt(i, col);
+    });
+    inst.instanceMatrix.needsUpdate = true; if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
+    scene.add(inst);
+  })();
+
+  /* palms and hills */
+  const leafGeo = (function(){
+    const g = new T.PlaneGeometry(1.15, 0.2, 8, 1); g.translate(0.575, 0, 0);
+    const pos = g.attributes.position;
+    for (let i = 0; i < pos.count; i++){ const x = pos.getX(i); pos.setY(i, pos.getY(i) * (1 - x / 1.3)); pos.setZ(i, -0.42 * Math.pow(x / 1.15, 2)); }
+    g.rotateX(-Math.PI / 2); g.computeVertexNormals(); return g;
+  })();
+  function palm(x, y, z, h, lean){
+    const grp = new T.Group(); grp.position.set(x, y, z); grp.rotation.z = lean; grp.rotation.y = Math.random() * 6;
+    const trunk = new T.Mesh(new T.CylinderGeometry(0.05, 0.085, h, 7), M.trunk); trunk.position.y = h / 2; trunk.castShadow = true; grp.add(trunk);
+    for (let i = 0; i < 9; i++){
+      const lf = new T.Mesh(leafGeo, M.leaf); lf.position.y = h; lf.rotation.y = i / 9 * Math.PI * 2 + Math.random() * 0.3; lf.rotation.z = 0.25 + Math.random() * 0.3; lf.castShadow = true; grp.add(lf);
+    }
+    scene.add(grp);
+  }
+  palm(-9.15, 0.85, -2.4, 2.6, 0.08); palm(-9.3, 0.85, -0.2, 2.2, -0.06); palm(-9.05, 0.85, 1.6, 2.9, 0.1);
+  palm(6.6, BASE, -4.6, 3.0, -0.07); palm(1.2, BASE, -5.2, 2.7, 0.05); palm(-4.5, BASE, -5.0, 3.2, 0.06);
+  [[-30, -70, 22], [12, -80, 28], [45, -65, 18]].forEach(function(hh){
+    const m = new T.Mesh(new T.SphereGeometry(1, 20, 12), M.hill); m.scale.set(hh[2], hh[2] * 0.28, hh[2] * 0.7); m.position.set(hh[0], BASE, hh[1]); scene.add(m);
+  });
+
+  /* units */
+  class PolyCurve extends T.Curve {
+    constructor(pts){
+      super(); this.pts = pts; this.cum = [0];
+      for (let i = 1; i < pts.length; i++) this.cum.push(this.cum[i - 1] + pts[i].distanceTo(pts[i - 1]));
+      this.len = this.cum[this.cum.length - 1];
+    }
+    getPoint(t, target){
+      target = target || new T.Vector3();
+      const d = Math.max(0, Math.min(1, t)) * this.len;
+      let lo = 0, hi = this.cum.length - 1;
+      while (hi - lo > 1){ const m = (lo + hi) >> 1; if (this.cum[m] <= d) lo = m; else hi = m; }
+      const seg = (this.cum[hi] - this.cum[lo]) || 1;
+      return target.copy(this.pts[lo]).lerp(this.pts[hi], (d - this.cum[lo]) / seg);
+    }
+  }
+  function filletPath(wp, radii, seg){
+    const out = [wp[0].slice()];
+    for (let i = 1; i < wp.length - 1; i++){
+      const p0 = wp[i - 1], p = wp[i], p1 = wp[i + 1], r = radii[i];
+      const l1 = Math.hypot(p[0] - p0[0], p[1] - p0[1]), l2 = Math.hypot(p1[0] - p[0], p1[1] - p[1]);
+      const d1 = [(p[0] - p0[0]) / l1, (p[1] - p0[1]) / l1], d2 = [(p1[0] - p[0]) / l2, (p1[1] - p[1]) / l2];
+      const a = [p[0] - d1[0] * r, p[1] - d1[1] * r], b = [p[0] + d2[0] * r, p[1] + d2[1] * r];
+      const c = [a[0] + d2[0] * r, a[1] + d2[1] * r];
+      const sa = Math.atan2(a[1] - c[1], a[0] - c[0]); let da = Math.atan2(b[1] - c[1], b[0] - c[0]) - sa;
+      while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+      out.push(a);
+      for (let k = 1; k < seg; k++){ const an = sa + da * k / seg; out.push([c[0] + r * Math.cos(an), c[1] + r * Math.sin(an)]); }
+      out.push(b);
+    }
+    out.push(wp[wp.length - 1].slice());
+    return out;
+  }
+  const ringGeo = new T.RingGeometry(0.93, 1, 48); ringGeo.rotateX(-Math.PI / 2);
+  function makeRipples(n){
+    const arr = [];
+    for (let i = 0; i < n; i++){
+      const m = new T.Mesh(ringGeo, new T.MeshBasicMaterial({color:0xE6FBF8, transparent:true, opacity:0, depthWrite:false, clippingPlanes:clip}));
+      m.visible = false; m.renderOrder = 4; scene.add(m); arr.push(m);
+    }
+    return arr;
+  }
+  const labelsEl = $('#labels');
+  const labels = [];
+  function addLabel(text, cls, getPos, minD, maxD, opts){
+    const el = document.createElement('div');
+    el.className = 'lbl ' + cls; el.hidden = true;
+    el.innerHTML = '<i class="dot"></i><span class="txt"></span>';
+    const txt = el.querySelector('.txt'); txt.textContent = text;
+    labelsEl.appendChild(el);
+    opts = opts || {};
+    labels.push({el: el, txt: txt, text: text, short: opts.short, wideOnly: !!opts.wideOnly, narrow: null, getPos: getPos, min: minD, max: maxD, shown: false});
+  }
+  const V = function(x, y, z){ return new T.Vector3(x, y, z); };
+  const UNITS = UG.map(function(g){
+    const U = {g: g};
+    const z = CUTZ;
+    const wp = [[g.xr, g.riserTop], [g.xr, g.yjb], [g.xd, g.yjb], [g.xd, g.yc], [g.xd2, g.yc], [g.xd2, g.yjb2], [g.xo, g.yjb2], [g.xo, g.mouthY]];
+    const rad = [0, 0.09, 0.09, 0.10, 0.10, 0.09, 0.09, 0];
+    const pts = filletPath(wp, rad, 14).map(function(p){ return new T.Vector3(p[0], p[1], z); });
+    const curve = new PolyCurve(pts);
+    U.curve = curve;
+    const segs = Math.max(120, Math.round(curve.len / 0.012));
+    const pipe = new T.Mesh(new T.TubeGeometry(curve, segs, 0.032, 20, false), M.pvc); pipe.castShadow = true; scene.add(pipe);
+    scene.add(new T.Mesh(new T.TubeGeometry(curve, segs, 0.0265, 16, false), M.pipeWater));
+    const lip = new T.Mesh(new T.TorusGeometry(0.032, 0.005, 8, 28), M.pvc); lip.rotation.x = Math.PI / 2; lip.position.set(g.xo, g.mouthY, z); scene.add(lip);
+    // inlet head: sleeve, seat, cup, cage (slides with Keep)
+    const head = new T.Group(); head.position.set(g.xr, g.upBed, z); scene.add(head); U.head = head;
+    const sleeve = new T.Mesh(new T.CylinderGeometry(0.037, 0.037, 0.08, 24, 1, true), M.pvc); sleeve.position.y = -0.04; head.add(sleeve);
+    const seat = new T.Mesh(new T.TorusGeometry(0.03, 0.0065, 10, 28), M.rubber); seat.rotation.x = Math.PI / 2; head.add(seat);
+    const cup = new T.Mesh(new T.CylinderGeometry(0.13, 0.12, 0.115, 36, 1, true), M.clear); cup.position.y = -0.0425; head.add(cup);
+    const cupB = new T.Mesh(new T.CircleGeometry(0.12, 36), M.clear); cupB.rotation.x = -Math.PI / 2; cupB.position.y = -0.1; head.add(cupB);
+    const cupW = new T.Mesh(new T.CylinderGeometry(0.126, 0.119, 0.108, 36), M.cupWater); cupW.position.y = -0.045; head.add(cupW);
+    const cage = new T.Mesh(new T.CylinderGeometry(0.102, 0.102, 0.245, 32, 1, true), M.mesh); cage.position.y = 0.015 + 0.1225; head.add(cage);
+    const ring = new T.Mesh(new T.TorusGeometry(0.102, 0.004, 6, 32), M.steel); ring.rotation.x = Math.PI / 2; ring.position.y = 0.26; head.add(ring);
+    const ctop = new T.Mesh(new T.CircleGeometry(0.102, 32), M.meshTop); ctop.rotation.x = -Math.PI / 2; ctop.position.y = 0.26; head.add(ctop);
+    const ball = new T.Mesh(new T.SphereGeometry(0.075, 32, 20), M.ball); ball.castShadow = true; ball.position.set(g.xr, g.upBed + 0.08, z); scene.add(ball);
+    U.ball = ball; U.by = g.upBed + 0.08;
+    // crown, dome and prime cap
+    const dome = new T.Mesh(new T.CylinderGeometry(0.045, 0.045, 0.09, 28, 1, true), M.clear); dome.position.set(g.bx, g.yc + 0.065, z); scene.add(dome);
+    const domeW = new T.Mesh(new T.CylinderGeometry(0.041, 0.041, 0.082, 28), M.pipeWater); domeW.position.set(g.bx, g.yc + 0.061, z); scene.add(domeW);
+    const pcap = new T.Mesh(new T.CylinderGeometry(0.052, 0.052, 0.024, 28), M.cap); pcap.position.set(g.bx, g.yc + 0.122, z); pcap.castShadow = true; scene.add(pcap);
+    const saddle = new T.Mesh(new T.BoxGeometry(0.38, 0.03, 0.22), M.saddle); saddle.position.set(g.bx, g.bundTop + 0.012, z); saddle.castShadow = true; scene.add(saddle);
+    [-0.13, 0.13].forEach(function(dx){ const cr = new T.Mesh(new T.BoxGeometry(0.06, 0.02, 0.09), M.saddle); cr.position.set(g.bx + dx, g.bundTop + 0.035, z); scene.add(cr); });
+    // outlet rocker
+    const post = new T.Mesh(new T.CylinderGeometry(0.012, 0.012, g.pivotY - (g.downSoil - 0.12), 10), M.steel);
+    post.position.set(g.pivotX, (g.pivotY + g.downSoil - 0.12) / 2, z - 0.045); post.castShadow = true; scene.add(post);
+    const pin = new T.Mesh(new T.CylinderGeometry(0.009, 0.009, 0.075, 10), M.steel); pin.rotation.x = Math.PI / 2; pin.position.set(g.pivotX, g.pivotY, z - 0.012); scene.add(pin);
+    const arm = new T.Group(); arm.position.set(g.pivotX, g.pivotY, z); scene.add(arm); U.arm = arm;
+    const bar = new T.Mesh(new T.BoxGeometry(g.Lc + g.Lf + 0.03, 0.012, 0.028), M.steel); bar.position.x = (g.Lf - g.Lc) / 2; bar.castShadow = true; arm.add(bar);
+    const capG = new T.Group(); scene.add(capG); U.capG = capG;
+    const capDisc = new T.Mesh(new T.CylinderGeometry(0.043, 0.043, 0.014, 28), M.rubber); capDisc.castShadow = true; capG.add(capDisc);
+    const push = new T.Mesh(new T.CylinderGeometry(0.0055, 0.0055, g.Lp, 8), M.steel); scene.add(push); U.push = push;
+    const flt = new T.Group(); scene.add(flt); U.flt = flt;
+    const fb = new T.Mesh(new T.CylinderGeometry(0.068, 0.068, 0.13, 32), M.float); fb.castShadow = true; flt.add(fb);
+    flt.add(new T.Mesh(new T.CylinderGeometry(0.0695, 0.0695, 0.026, 32, 1, true), M.floatBand));
+    const fcap = new T.Mesh(new T.SphereGeometry(0.068, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2), M.float); fcap.scale.y = 0.35; fcap.position.y = 0.065; flt.add(fcap);
+    const rod = new T.Mesh(new T.CylinderGeometry(0.005, 0.005, 1, 8), M.steel); scene.add(rod); U.rod = rod;
+    const tube = new T.Mesh(new T.CylinderGeometry(0.095, 0.095, 0.46, 36, 1, true), M.perf); tube.position.set(g.tubeX, g.downSoil + 0.05, z); scene.add(tube);
+    U.fc = g.downSoil + 0.08;
+    const skirt = new T.Mesh(new T.CylinderGeometry(0.036, 0.033, 1, 24, 1, true), M.skirt); skirt.visible = false; scene.add(skirt); U.skirt = skirt;
+    // beads that show moving water
+    U.nb = Math.round(curve.len / 0.07);
+    U.beads = new T.InstancedMesh(new T.SphereGeometry(0.0115, 8, 6), M.bead, U.nb); U.beads.frustumCulled = false; scene.add(U.beads);
+    U.phase = Math.random(); U.bscale = 0; U.flowI = 0;
+    U.rin = makeRipples(3); U.rout = makeRipples(3);
+    // labels
+    addLabel(g.name, 'name', function(){ return V(g.bx, g.yc + 0.3, z); }, 3.3, 99, {short: g.name.replace(' unit', '').replace(/ /g, '')});
+    addLabel('Keep ball', 'k r', function(){ return U.ball.position; }, 0, 2.7);
+    addLabel('Inlet cage', 'u', function(){ return V(g.xr, U.head.position.y + 0.27, z); }, 0, 2.7);
+    addLabel('Water-seal cup', 'k l', function(){ return V(g.xr - 0.13, U.head.position.y - 0.035, z); }, 0, 2.7);
+    addLabel('Keep slider', 'k r', function(){ return V(g.xr + 0.04, U.head.position.y - 0.06, z); }, 0, 1.9);
+    addLabel('Clear crown and prime cap', 'u', function(){ return V(g.bx, g.yc + 0.14, z); }, 0, 2.7);
+    addLabel('J-trap, always full', 'f l', function(){ return V(g.xo - 0.09, g.yjb2 - 0.035, z); }, 0, 2.7);
+    addLabel('Rubber cap', 'f l', function(){ return U.capG.position; }, 0, 2.7);
+    addLabel('Rocker', 'f u', function(){ return V(g.pivotX, g.pivotY + 0.02, z); }, 0, 2.7);
+    addLabel('Fill float', 'f r', function(){ return U.flt.position; }, 0, 2.7);
+    addLabel('Perforated tube', 'r', function(){ return V(g.tubeX + 0.095, g.downSoil + 0.265, z); }, 0, 2.7);
+    return U;
+  });
+  addLabel('Canal', 'field', function(){ return V(-8.1, 0.95, -1.4); }, 3.0, 99, {wideOnly: true});
+  addLabel('Field A', 'field', function(){ return V(-5.0, 0.55, -1.0); }, 3.0, 99, {wideOnly: true});
+  addLabel('Field B', 'field', function(){ return V(0.0, 0.30, -1.0); }, 3.0, 99, {wideOnly: true});
+  addLabel('Field C', 'field', function(){ return V(5.0, 0.05, -1.0); }, 3.0, 99, {wideOnly: true});
+
+  /* per-frame updates */
+  const tmpV = new T.Vector3(), dummy = new T.Object3D();
+  const DRY = C(0x7B6548), WET = C(0x4A3A2A);
+  function ripples(arr, x, y, I, converge, time){
+    for (let i = 0; i < arr.length; i++){
+      const m = arr[i];
+      if (I < 0.02){ m.visible = false; continue; }
+      m.visible = true;
+      const ph = (time * 0.5 + i / arr.length) % 1;
+      const r = converge ? 0.12 + (1 - ph) * 0.2 : 0.045 + ph * 0.22;
+      m.scale.set(r, 1, r); m.position.set(x, y, CUTZ);
+      m.material.opacity = I * (converge ? ph : (1 - ph)) * 0.6;
+    }
+  }
+  function updUnit(U, dt, time, snap){
+    const g = U.g, j = g.j, L = LINKS[j];
+    const K = keepLevel(j);
+    const seatY = g.upBed + (K - 1.8) / 100;
+    U.head.position.y = seatY;
+    const hu = sim.lv[L.up], upW = g.upBed + hu / 100;
+    const rest = seatY + 0.0707;
+    const by = sim.keep[j] ? Math.min(Math.max(upW + 0.053, rest), seatY + 0.26 - 0.078) : rest;
+    U.by = snap ? by : U.by + (by - U.by) * Math.min(1, dt * (sim.keep[j] ? 5 : 14));
+    U.ball.position.y = U.by;
+    const hd = sim.lv[L.down], dnW = g.downSoil + hd / 100;
+    const fcClosed = g.downSoil + sim.F / 100 + 0.04;
+    const endC = g.pivotY + g.Lf * Math.sin(g.thC), endO = g.pivotY + g.Lf * Math.sin(g.thO);
+    const R = endC - fcClosed;
+    const fcT = Math.min(fcClosed, Math.max(endO - R, dnW + 0.04));
+    U.fc = snap ? fcT : U.fc + (fcT - U.fc) * Math.min(1, dt * 6);
+    const end = U.fc + R;
+    const th = Math.asin(Math.max(-1, Math.min(1, (end - g.pivotY) / g.Lf)));
+    U.arm.rotation.z = th;
+    const ax = g.pivotX - g.Lc * Math.cos(th), ay = g.pivotY - g.Lc * Math.sin(th);
+    const capY = ay - g.Lp;
+    U.capG.position.set(ax, capY, CUTZ);
+    U.push.position.set(ax, capY + g.Lp / 2, CUTZ);
+    const fx = g.pivotX + g.Lf * Math.cos(th);
+    U.flt.position.set(fx, U.fc, CUTZ);
+    const rb = U.fc + 0.088, rl = Math.max(0.01, end - rb);
+    U.rod.scale.y = rl; U.rod.position.set(fx, rb + rl / 2, CUTZ);
+    const q = sim.q[j];
+    const inten = Math.min(1, q / 1.4);
+    U.flowI = snap ? inten : U.flowI + (inten - U.flowI) * Math.min(1, dt * 3);
+    const gap = (capY - 0.007) - (g.mouthY + 0.004);
+    U.skirt.visible = U.flowI > 0.05 && gap > 0.002;
+    if (U.skirt.visible){ U.skirt.scale.y = gap; U.skirt.position.set(g.xo, g.mouthY + 0.004 + gap / 2, CUTZ); }
+    const moving = q > 0.015 ? 1 : 0;
+    const speed = (0.14 + 0.5 * Math.min(1, q / 2.6)) / U.curve.len;
+    U.phase = (U.phase + dt * speed * moving) % 1;
+    U.bscale = snap ? moving : U.bscale + (moving - U.bscale) * Math.min(1, dt * 3);
+    const bs = Math.max(0.0001, U.bscale);
+    for (let i = 0; i < U.nb; i++){
+      U.curve.getPoint((i / U.nb + U.phase) % 1, tmpV);
+      dummy.position.copy(tmpV); dummy.scale.setScalar(bs); dummy.updateMatrix();
+      U.beads.setMatrixAt(i, dummy.matrix);
+    }
+    U.beads.instanceMatrix.needsUpdate = true;
+    ripples(U.rin, g.xr, upW + 0.004, upW > seatY + 0.017 ? U.flowI : 0, true, time);
+    ripples(U.rout, g.xo, Math.max(dnW, g.downSoil) + 0.004, U.flowI, false, time);
+  }
+  function updWater(dt){
+    ['canal', 'A', 'B', 'C'].forEach(function(f){
+      const lv = sim.lv[f], W = WATER[f], base = SOIL[f];
+      const show = lv > 0.08;
+      W.plane.visible = show; W.face.visible = show;
+      if (show){
+        W.plane.position.y = base + lv / 100 + 0.0015;
+        W.face.scale.y = lv / 100; W.face.position.y = base + lv / 200;
+      }
+      if (f !== 'canal'){
+        const w = Math.max(0, Math.min(1, (lv + 3) / 3));
+        topMats[f].color.copy(DRY).lerp(WET, w);
+      }
+    });
+    rippleTex.offset.x += dt * 0.004; rippleTex.offset.y += dt * 0.003;
+    if (sim.canalOn) canalTex.offset.y += dt * 0.18;
+  }
+
+  /* camera poses */
+  const POSES = {
+    tract: {pos:[3.4, 5.2, 13.2], tgt:[-0.8, 0.25, 0.4], wide:true, portrait:{pos:[1.6, 13.5, 15.5], tgt:[-0.9, 0.1, 0.6]}},
+    canal: {pos:[-5.2, 2.15, 6.7], tgt:[-7.45, 0.75, 2.3], wide:false},
+    inlet: {pos:[-2.78, 1.08, 4.2], tgt:[-3.0, 0.6, 2.85], wide:false},
+    outlet:{pos:[-1.0, 1.0, 4.25], tgt:[-1.4, 0.42, 2.85], wide:false},
+    chain: {pos:[6.4, 3.5, 9.8], tgt:[0.6, 0.15, 0.9], wide:true, portrait:{pos:[2.6, 12.8, 15.0], tgt:[0.0, 0.1, 0.6]}},
+    crown: {pos:[-2.3, 1.35, 4.55], tgt:[-2.72, 0.7, 2.85], wide:false}
+  };
+  let curView = 'tract', userMoved = false, tween = null;
+  function poseFor(name){
+    const a = camera.aspect || 1;
+    let p = POSES[name];
+    if (a < 1.05 && p.portrait){
+      const ts = new T.Vector3().fromArray(p.portrait.tgt);
+      const ps = new T.Vector3().fromArray(p.portrait.pos).sub(ts).multiplyScalar(Math.max(1, Math.min(1.5, 0.95 / a))).add(ts);
+      return {pos: ps, tgt: ts};
+    }
+    const s = p.wide ? Math.max(1, Math.min(2.2, 1.6 / a)) : Math.max(1, Math.min(1.7, 1.15 / a));
+    const tgt = new T.Vector3().fromArray(p.tgt);
+    const pos = new T.Vector3().fromArray(p.pos).sub(tgt).multiplyScalar(s).add(tgt);
+    return {pos: pos, tgt: tgt};
+  }
+  function setView(name, instant){
+    curView = name; userMoved = false;
+    const p = poseFor(name);
+    if (instant || reduceMotion){ tween = null; camera.position.copy(p.pos); controls.target.copy(p.tgt); controls.update(); return; }
+    tween = {t: 0, dur: 1.5, p0: camera.position.clone(), p1: p.pos, t0: controls.target.clone(), t1: p.tgt};
+  }
+  controls.addEventListener('start', function(){ userMoved = true; tween = null; });
+
+  function resize(){
+    const w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.fov = camera.aspect < 1 ? 50 : 40; camera.updateProjectionMatrix();
+    if (!userMoved && !tween) setView(curView, true);
+  }
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(viewport); else window.addEventListener('resize', resize);
+  resize();
+
+  const projV = new T.Vector3();
+  function updLabels(){
+    const w = viewport.clientWidth, h = viewport.clientHeight, narrow = w < 600;
+    for (let i = 0; i < labels.length; i++){
+      const L = labels[i];
+      if (L.short && L.narrow !== narrow){ L.txt.textContent = narrow ? L.short : L.text; L.narrow = narrow; }
+      let show = labelsOn && !(L.wideOnly && narrow);
+      if (show){
+        const p = L.getPos();
+        const d = p.distanceTo(camera.position);
+        if (d < L.min || d > L.max) show = false;
+        else {
+          projV.copy(p).project(camera);
+          if (projV.z > 1 || projV.x < -1.05 || projV.x > 1.05 || projV.y < -1.05 || projV.y > 1.05) show = false;
+          else L.el.style.transform = 'translate(' + ((projV.x * 0.5 + 0.5) * w).toFixed(1) + 'px,' + ((-projV.y * 0.5 + 0.5) * h).toFixed(1) + 'px)';
+        }
+      }
+      if (show !== L.shown){ L.el.hidden = !show; L.shown = show; }
+    }
+  }
+  function ease(t){ return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+
+  function update(dt, time, snap){
+    if (tween){
+      tween.t += dt;
+      const k = ease(Math.min(1, tween.t / tween.dur));
+      camera.position.lerpVectors(tween.p0, tween.p1, k);
+      controls.target.lerpVectors(tween.t0, tween.t1, k);
+      if (k >= 1) tween = null;
+    }
+    controls.update();
+    setSky((sim.t / 60) % 24);
+    updWater(dt);
+    for (let i = 0; i < UNITS.length; i++) updUnit(UNITS[i], dt, time, snap);
+    updLabels();
+    renderer.render(scene, camera);
+  }
+  return {
+    update: update,
+    setView: setView,
+    snap: function(){ for (let i = 0; i < UNITS.length; i++) updUnit(UNITS[i], 0, 0, true); }
+  };
+}
+
+try {
+  gl = init3D();
+  $('#vpLoading').hidden = true;
+} catch (err) {
+  gl = null;
+  $('#vpLoading').hidden = true;
+  $('#vpNoGL').hidden = false;
+  if (window.console) console.warn('3D view unavailable:', err && err.message);
+}
+
+/* start on step 1 */
+goStep(0);
+if (gl) gl.setView(STEPS[0].view, true);
+
+let onScreen = true;
+if (window.IntersectionObserver){
+  new IntersectionObserver(function(es){ onScreen = es[0].isIntersecting; }, {threshold: 0.02}).observe($('#stage'));
+}
+let last = performance.now();
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
+  if (!onScreen || document.hidden) return;
+  if (!sim.paused) advance(dt);
+  updateHUD(false);
+  if (gl) gl.update(dt, now / 1000, false);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
